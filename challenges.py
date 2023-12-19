@@ -293,7 +293,7 @@ class Challenge:
 		fourthline = self.custom_msg
 		
 		fivthline = f"\n\nGames were played in {self.version}" if self.games_total else "\n\nNo wins or loses have been scored."
-		return f"\n------------------------------------\nChallenge{self.index}_{self.winner.history.key} vs {self.loser.history.key}, {self.winner.wins}-{self.loser.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString} {oneTwoThreeLine} {fourthline}{fivthline}\n\nLet the challenges continue!\n\n{self.top10}```"
+		return f"\n------------------------------------\nChallenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString} {oneTwoThreeLine} {fourthline}{fivthline}\n\nLet the challenges continue!\n\n{self.top10}```"
 		
 	def update_histories(self, issue_score):
 		if self.winner.history.rank > self.loser.history.rank:
