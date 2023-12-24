@@ -218,6 +218,8 @@ class Challenge:
 	_str_bo9_or_b4b5 = None
 	#---------------------------#
 	class PlayerInChallenge:
+		_last_challenge = None
+		_days_since_last_chall = None
 		def __init__(self, master, key, wins1v1, wins2v2):
 			self.key = key
 			self.master = master
@@ -247,28 +249,20 @@ class Challenge:
 			
 		@property
 		def last_challenge(self):
-			return self.master
-			# global CHALLENGES
-			asdasd = [cha for cha in CHALLENGES.values() if cha.index < self.master.index and self.key in {cha.winner.key, cha.loser.key}]
-			# print(asdasd)
-			real_challenges = sorted([cha for cha in asdasd if cha.is_cha], key=lambda x: x.index)
-			# real_challenges = sorted([cha for cha in asdasd], key=lambda x: x.index)
-			# print(self.key, real_challenges)
-			if real_challenges:
-				return real_challenges[-1]
-			else:
-				# print(sorted(CHALLENGES.values(), key=lambda x: x.index))
-				# return sorted(CHALLENGES.values(), key=lambda x: x.index)[0]
-				print(asdasd, self.key)
-				return asdasd[0]
+			if self._last_challenge is None:
+				self._last_challenge = self.history.challenges[-2]
+			return self._last_challenge
+		
 			
 		@property
 		def days_since_last_chall(self):	
-			# print(self.master.date, self.history.last_played_chall)
-			if self.last_challenge is None:
-				return None # self.history.fecha_de_alta
-			delta = self.master.date - self.last_challenge.date
-			return delta.days # /30
+			if self._days_since_last_chall is None:
+				if self.last_challenge is None:
+					self._days_since_last_chall = None # self.history.fecha_de_alta.date
+				else:
+					delta = self.master.date - self.last_challenge.date
+					self._days_since_last_chall = delta.days # /30
+			return self._days_since_last_chall
 			
 		def __repr__(self):
 			return f"|{self.history.key}|"
@@ -279,9 +273,6 @@ class Challenge:
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
 		self.dont_score_mode = self.version == "NO_SCORE"
-		
-		
-		
 		self.is_add_and_kick = self.version == "ADD_AND_KICK"
 		if not self.dont_score_mode and not self.is_add_and_kick:
 			player1 = Challenge.PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
@@ -386,9 +377,9 @@ class Challenge:
 	@property
 	def str_add_and_kick_or_none(self):
 		if self._str_add_and_kick_or_none is None:
-			if self.version == "ADD_AND_KICK":
-				since_last_event = f'Since Challenge{self.defender.last_challenge.index}' if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.last_challenge}'
-				self._str_add_and_kick_or_none = f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }{f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot." }"
+			if self.is_add_and_kick:
+				since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
+				self._str_add_and_kick_or_none = f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
 			else:
 				self._str_add_and_kick_or_none = ""
 		return self._str_add_and_kick_or_none
@@ -396,8 +387,8 @@ class Challenge:
 	@property
 	def str_defended_or_took_over(self):
 		if self._str_defended_or_took_over is None:
-			if self.version == "ADD_AND_KICK":
-				self._str_defended_or_took_over = ""
+			if self.is_add_and_kick:
+				self._str_defended_or_took_over = f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
 			else:
 				if self.defender is self.winner:
 					self._str_defended_or_took_over = f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
@@ -443,7 +434,7 @@ class Challenge:
 		
 		
 	def __str__(self):
-		return f"\n------------------------------------\nChallenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_scoreTotal_or_none}{self.str_undefended_or_not}{self.str_defended_or_took_over}{self.str_add_and_kick_or_none}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
+		return f"\n------------------------------------\nChallenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_scoreTotal_or_none}{self.str_undefended_or_not}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
 		
 	def update_histories(self, issue_score):
 		if self.winner.history.rank > self.loser.history.rank:
