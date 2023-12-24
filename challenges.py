@@ -84,7 +84,7 @@ PLAYER_NAMES = {
 
 #---------------------------#
 class Player:
-	_last_played_chall_since_today = None
+	# _last_played_chall_since_today = None
 	def __init__(self, key, name):
 		self.key = key
 		self.name = name[0]
@@ -108,24 +108,44 @@ class Player:
 	@property	
 	def loses2v2_total(self):
 		return self.games_played_2v2 - self.wins2v2_total
+	
+	# @property	
+	# def last_challenge(self):
+		# real_challenges = sorted([cha for cha in self.challenges if cha.is_cha], key=lambda x: x.index)
+		# return real_challenges[-1]
 		
-	@property	
-	def from_today_months_since_last_chall(self):
-		if self._last_played_chall_since_today is None:
-			last_cha = self.last_played_chall()
-			if last_cha is not None:
-				last_cha = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
-			self._last_played_chall_since_today = last_cha
+	# @property	
+	# def last_played_chall(self):
+		# real_challenges = sorted([cha for cha in self.challenges if cha.is_cha], key=lambda x: x.index)
+		# real_challenges = sorted([cha for cha in self.challenges if cha.is_cha], key=lambda x: x.index)
+		# print(real_challenges)
+		# return self.challenges[-1].date
+		# if real_challenges:
+			# self.last_challenge = real_challenges[-1]
+			# return real_challenges[-1].date
+		# else:
+			# return None #"Never" # self.challenges[0].date
+		
+	# @property	
+	# def from_today_days_since_last_chall(self):
+		# if True:
+		# if self._last_played_chall_since_today is None:
+			# last_cha = self.last_played_chall()
+			# if last_cha is None:
+				# return "Never"
+			# else:
+				# last_cha = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
+				# self._last_played_chall_since_today = last_cha
 			
-		return self._last_played_chall_since_today
+		# return self._last_played_chall_since_today
 			
-	def last_played_chall_since_today_string(self):	
-		last_cha = self.last_played_chall()
-		if last_cha:
-			delta = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
-			return f"{self.name} has not played a challenge since {delta} months"
-		else:
-			return None
+	# def last_played_chall_since_today_string(self):	
+		# last_cha = self.last_played_chall()
+		# if last_cha:
+			# delta = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
+			# return f"{self.name} has not played a challenge since {delta} months"
+		# else:
+			# return None
 		
 	def is_black(self):
 		return True if self.key in {PLAYERS["ANDY"].key, PLAYERS["LAU"].key} else False
@@ -178,13 +198,6 @@ class Player:
 			TOP_10_LEGACY[rank] = self.key
 		return rank
 		
-	def last_played_chall(self):
-		real_challenges = [cha for cha in self.challenges if cha.games_total]
-		if real_challenges:
-			return real_challenges[-1].date
-		else:
-			return self.challenges[0].date
-		
 	def __str__(self):
 		return f"|{self.key}|\tRank:{self.rank}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 	def __repr__(self):
@@ -204,14 +217,51 @@ class Challenge:
 			self.history = PLAYERS[key]
 			self.history.challenges.append(master)
 			self.rank = self.history.rank
-				
-		def months_since_last_chall(self):	
-			delta = self.master.date - self.history.last_played_chall()
-			return delta.days/30
+			
+		@property
+		def rank_ordinal(self):
+			ORDINAL = {
+				1: "1st",
+				2: "2nd",
+				3: "3rd",
+				4: "4th",
+				5: "5th",
+				6: "6th",
+				7: "7th",
+				8: "8th",
+				9: "9th",
+				10: "10th"
+			}
+			return ORDINAL[self.rank]
+			
+		@property
+		def last_challenge(self):
+			asdasd = [cha for cha in CHALLENGES.values() if cha.index < self.master.index and self.key in {cha.winner.key, cha.loser.key}]
+			# print(asdasd)
+			real_challenges = sorted([cha for cha in asdasd if cha.is_cha], key=lambda x: x.index)
+			# real_challenges = sorted([cha for cha in asdasd], key=lambda x: x.index)
+			# print(self.key, real_challenges)
+			if real_challenges:
+				return real_challenges[-1]
+			else:
+				# print(sorted(CHALLENGES.values(), key=lambda x: x.index))
+				return sorted(CHALLENGES.values(), key=lambda x: x.index)[0]
+			
+		@property
+		def days_since_last_chall(self):	
+			# print(self.master.date, self.history.last_played_chall)
+			if self.last_challenge is None:
+				return "never played"
+			delta = self.master.date - self.last_challenge.date
+			return delta.days # /30
 			
 		def __repr__(self):
 			return f"|{self.history.key}|"
-
+	
+	@property
+	def is_cha(self):
+		return not self.is_add_and_kick and not self.dont_score_mode
+		
 	def __init__(self, index, row):
 		self.index = index
 		self.version = row["version"]
@@ -220,22 +270,22 @@ class Challenge:
 		self.dont_score_mode = self.version == "NO_SCORE"
 		self.is_add_and_kick = self.version == "ADD_AND_KICK"
 		if not self.dont_score_mode and not self.is_add_and_kick:
-			player_1 = Challenge.PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
-			player_2 = Challenge.PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
-			self.winner = player_2 if player_2.wins > player_1.wins else player_1
-			self.loser = player_1 if self.winner == player_2 else player_2
+			player1 = Challenge.PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
+			player2 = Challenge.PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
+			self.winner = player2 if player2.wins > player1.wins else player1
+			self.loser = player1 if self.winner == player2 else player2
 		else:
-			player_1 = Challenge.PlayerInChallenge(self, row["p1"], 0, 0)
-			player_2 = Challenge.PlayerInChallenge(self, row["p2"], 0, 0)
-			self.winner = player_1 
-			self.loser = player_2 
+			player1 = Challenge.PlayerInChallenge(self, row["p1"], 0, 0)
+			player2 = Challenge.PlayerInChallenge(self, row["p2"], 0, 0)
+			self.winner = player1 
+			self.loser = player2 
 		self.games_total = self.winner.wins + self.loser.wins
 		self.games_1v1 = self.winner.wins1v1 + self.loser.wins1v1
 		self.games_2v2 = self.winner.wins2v2 + self.loser.wins2v2
 		
 			
-		self.challenger = player_1 if player_1.rank > player_2.rank else player_2
-		self.defender = player_1 if self.challenger == player_2 else player_2
+		self.challenger = player1 if player1.rank > player2.rank else player2
+		self.defender = player1 if self.challenger == player2 else player2
 		self.everyone_else_on_list = {player for player in PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
 		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
 		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.dont_score_mode and not self.is_add_and_kick else ""
@@ -277,8 +327,8 @@ class Challenge:
 		return f"|Cha{self.index}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 		
 	def __str__(self):
-		add_and_kick_1 = f"\n\n Despite not being challenged, {self.defender.history.name} has not been active in more than {self.defender.months_since_last_chall()} months."
-		add_and_kick_2 = f"\n\n- {self.defender.history.name} has been kicked from the list." 
+		add_and_kick_1 = f"\n\nDespite not being challenged, {self.defender.history.name} has not been active in more than {self.defender.days_since_last_chall} days.  (last chall was {(self.defender.last_challenge.index if self.defender.last_challenge else 'nochlng')})"
+		add_and_kick_2 = f"\n\n- {self.defender.history.name} has been kicked from the spot '{self.defender.rank}' and from the list." 
 		add_and_kick_3 = f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot." 
 		add_and_kick = f"{add_and_kick_1}{add_and_kick_2}{add_and_kick_3}" 
 		
@@ -386,12 +436,12 @@ def write_chalog(reverse=True):
 	
 	
 		
-def print_02_sorted_players_by_activity():
-	sorted_players = list(sorted(PLAYERS.values(), key=lambda player: player.from_today_months_since_last_chall))
+# def print_02_sorted_players_by_activity():
+	# sorted_players = list(sorted(PLAYERS.values(), key=lambda player: player.from_today_days_since_last_chall))
 
-	ordered_player_dict = {player.name: player.from_today_months_since_last_chall for player in sorted_players}
-	dictt = {player.key: player.from_today_months_since_last_chall for player in sorted_players}
-	ic(sorted_players)
+	# ordered_player_dict = {player.name: player.from_today_days_since_last_chall for player in sorted_players}
+	# dictt = {player.key: player.from_today_days_since_last_chall for player in sorted_players}
+	# ic(sorted_players)
 		
 def print_03_player_vs_player():
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["MISHA"], printEm=True)
@@ -429,11 +479,11 @@ if __name__ == "__main__":
 		for key, name 
 		in PLAYER_NAMES.items()
 	}
-	ic(PLAYERS)
+	# ic(PLAYERS)
 
 	"""2. Read csv"""
 	data = dataframe_01_readear(CHALL_DATA_CSV)	
-	print(data)
+	# print(data)
 	
 	
 	"""3. Update csv"""
