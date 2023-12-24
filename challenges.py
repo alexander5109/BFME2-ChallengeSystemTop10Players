@@ -214,6 +214,8 @@ class Challenge:
 	_str_defended_or_took_over = None
 	_str_version_or_no_score = None
 	_str_undefended_or_not = None
+	_str_challenge_or_none = None
+	_str_bo9_or_b4b5 = None
 	#---------------------------#
 	class PlayerInChallenge:
 		def __init__(self, master, key, wins1v1, wins2v2):
@@ -240,7 +242,8 @@ class Challenge:
 				9: "9th",
 				10: "10th"
 			}
-			return ORDINAL[self.rank]
+			return ORDINAL.get(self.rank, "from outside the list")
+			# return ORDINAL[self.rank]
 			
 		@property
 		def last_challenge(self):
@@ -291,8 +294,8 @@ class Challenge:
 			self.winner = player1 
 			self.loser = player2 
 		self.games_total = self.winner.wins + self.loser.wins
-		self.games_1v1 = self.winner.wins1v1 + self.loser.wins1v1
-		self.games_2v2 = self.winner.wins2v2 + self.loser.wins2v2
+		self.games1v1 = self.winner.wins1v1 + self.loser.wins1v1
+		self.games2v2 = self.winner.wins2v2 + self.loser.wins2v2
 		
 			
 		self.challenger = player1 if player1.rank > player2.rank else player2
@@ -347,7 +350,7 @@ class Challenge:
 	@property
 	def str_score1v1_or_none(self):
 		if self._str_score1v1 is None:
-			if self.games_1v1:
+			if self.games1v1:
 				self._str_score1v1 = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
 			else:
 				self._str_score1v1 = ""
@@ -356,7 +359,7 @@ class Challenge:
 	@property
 	def str_score2v2_or_none(self):
 		if self._str_score2v2 is None:
-			if self.games_2v2:
+			if self.games2v2:
 				self._str_score2v2 = f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
 			else:
 				self._str_score2v2 = ""
@@ -365,8 +368,8 @@ class Challenge:
 	@property
 	def str_scoreTotal_or_none(self):
 		if self._str_scoreTotal_or_none is None:
-			if self.games_2v2:
-				self._str_scoreTotal_or_none = f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games_2v2 else ""
+			if self.games2v2:
+				self._str_scoreTotal_or_none = f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games2v2 else ""
 			else:
 				self._str_scoreTotal_or_none = ""
 		return self._str_scoreTotal_or_none
@@ -374,10 +377,10 @@ class Challenge:
 	@property
 	def str_undefended_or_not(self):
 		if self._str_undefended_or_not is None:
-			if self.games_total:
-				self._str_undefended_or_not = ""
-			else:
+			if self.dont_score_mode:
 				self._str_undefended_or_not = f"\nSpotUndefended: {self.defender.history.name} has not shown any activity in a week nor has attempted to arrange a play-date to defend his spot."
+			else:
+				self._str_undefended_or_not = ""
 		return self._str_undefended_or_not
 		
 	@property
@@ -393,10 +396,13 @@ class Challenge:
 	@property
 	def str_defended_or_took_over(self):
 		if self._str_defended_or_took_over is None:
-			if self.defender is self.winner:
-				self._str_defended_or_took_over = f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
+			if self.version == "ADD_AND_KICK":
+				self._str_defended_or_took_over = ""
 			else:
-				self._str_defended_or_took_over = f"\n\n+ {self.challenger.history.name} has {self.flawless}took over the {self.defender.rank_ordinal} spot!" 
+				if self.defender is self.winner:
+					self._str_defended_or_took_over = f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
+				else:
+					self._str_defended_or_took_over = f"\n\n+ {self.challenger.history.name} has {self.flawless}took over the {self.defender.rank_ordinal} spot!" 
 		return self._str_defended_or_took_over
 		
 	@property
@@ -408,8 +414,36 @@ class Challenge:
 				self._str_version_or_no_score = "\n\nNo wins or loses have been scored."
 		return self._str_version_or_no_score
 		
+	
+	@property
+	def str_bo9_or_b4b5(self):
+		if self._str_bo9_or_b4b5 is None:
+			if not self.games2v2:
+				# self._str_bo9_or_b4b5 = "Challenge Mode: Best of 9 in 1vs1."
+				self._str_bo9_or_b4b5 = ""
+			else:
+				self._str_bo9_or_b4b5 = "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+		return self._str_bo9_or_b4b5
+		
+		
+		
+		
+		
+	@property
+	def str_challenge_or_none(self):
+		if self._str_challenge_or_none is None:
+			if not self.is_add_and_kick: #self.is_cha:
+				self._str_challenge_or_none = f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{self.str_bo9_or_b4b5} "
+			else:
+				self._str_challenge_or_none = ""
+		return self._str_challenge_or_none
+		
+		
+		
+		
+		
 	def __str__(self):
-		return f"\n------------------------------------\nChallenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}\n\n{self.challenger.history.name} has challenged {self.defender.history.name} for his {self.defender.rank_ordinal} spot.\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_scoreTotal_or_none}{self.str_undefended_or_not}{self.str_defended_or_took_over}{self.str_add_and_kick_or_none}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
+		return f"\n------------------------------------\nChallenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_scoreTotal_or_none}{self.str_undefended_or_not}{self.str_defended_or_took_over}{self.str_add_and_kick_or_none}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
 		
 	def update_histories(self, issue_score):
 		if self.winner.history.rank > self.loser.history.rank:
@@ -426,15 +460,15 @@ class Challenge:
 				
 			
 			self.winner.history.games_played_total += self.games_total
-			self.winner.history.games_played_1v1 += self.games_1v1
-			self.winner.history.games_played_2v2 += self.games_2v2
+			self.winner.history.games_played_1v1 += self.games1v1
+			self.winner.history.games_played_2v2 += self.games2v2
 			self.winner.history.wins_total += self.winner.wins
 			self.winner.history.wins1v1_total += self.winner.wins1v1
 			self.winner.history.wins2v2_total += self.winner.wins2v2
 			
 			self.loser.history.games_played_total += self.games_total
-			self.loser.history.games_played_1v1 += self.games_1v1
-			self.loser.history.games_played_2v2 += self.games_2v2
+			self.loser.history.games_played_1v1 += self.games1v1
+			self.loser.history.games_played_2v2 += self.games2v2
 			self.loser.history.wins_total += self.loser.wins
 			self.loser.history.wins1v1_total += self.loser.wins1v1
 			self.loser.history.wins2v2_total += self.loser.wins2v2
