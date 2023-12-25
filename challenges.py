@@ -33,6 +33,7 @@ PLAYER_NAMES = {
 	# "EOL_SCORP": ["Eol Scorpion"],
 	# "APMN": ["Apmn"],
 	# "SIBEL": ["SNOWBL4CK", "D3ATH^G0D"],
+	"RAKI": ["Raknarok"],
 	"YUSUF": ["Yu$ufNi$ic"],
 	"GANNICUS": ["Gannicus"],
 	"THORIN": ["GranThorino", "thuren k-shild"],
