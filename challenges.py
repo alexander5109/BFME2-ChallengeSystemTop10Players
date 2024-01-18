@@ -516,8 +516,8 @@ def rename_folder(torename, ideal, compress):
 	if existing.exists() and not ideal.exists():
 		existing.rename(ideal)
 		print(f"* {torename} was renamed to {ideal.name}")
-	if compress:
-		compress_folder(ideal)
+	# if compress:
+		# compress_folder(ideal)
 	
 	
 def write_chalog():
