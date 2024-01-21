@@ -164,19 +164,20 @@ class Player:
 		
 		
 	def get_1v1_vs(self, other, printEm=True):
-		listt = [chall for chall in self.challenges if (chall.p1.history is self or chall.p2.history is self) and (chall.p1.history is other or chall.p2.history is chall)]
-		self_wins = len({a for a in listt.values() if a.winner.history is self})
-		other_wins = len({a for a in listt.values() if a.winner.history is other})
-		total_matches = len(listt)
-		if total_matches == 0:
+		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
+		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
+		self_wins_len = len(self_wins)
+		other_wins_len = len(other_wins)
+		total_matches_len = self_wins_len + other_wins_len
+		if total_matches_len == 0:
 			winrate = 0
 		else:
-			winrate = (self_wins / total_matches) * 100.0
+			winrate = (self_wins_len / total_matches_len) * 100.0
 		if printEm:
-			print(f"{self.name} vs {other.name}: {self_wins}-{other_wins} | WinRate: {winrate}")
+			print(f"{self.name} vs {other.name}: {self_wins_len}-{other_wins_len} | WinRate: {winrate}")
 		else:
-			if total_matches > 0:
-				return self_wins > other_wins 
+			if total_matches_len > 0:
+				return self_wins_len > other_wins_len 
 			else:
 				return None
 		
@@ -542,10 +543,10 @@ def write_chalog():
 	# ic(sorted_players)
 		
 def print_03_player_vs_player():
+	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["ANDY"], printEm=True)
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["MISHA"], printEm=True)
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["OTTO"], printEm=True)
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["SAURON"], printEm=True)
-	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["ANDY"], printEm=True)
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["AHWE"], printEm=True)
 
 	PLAYERS["MISHA"].get_1v1_vs(PLAYERS["OTTO"], printEm=True)
@@ -604,7 +605,7 @@ if __name__ == "__main__":
 	"""4. Testing functions"""
 	# print_01_challenge_log(reverse=False)
 	# print_02_sorted_players_by_activity()
-	# print_03_player_vs_player()
+	print_03_player_vs_player()
 	# print_04_who_is_black()
 	
 # ic(
