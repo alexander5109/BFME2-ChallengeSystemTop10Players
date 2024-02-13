@@ -28,52 +28,108 @@ TOP_10_LEGACY = {
 	1: "ECTH",
 }	
 
+		TOP 10
+	10  .           2-3
+	9   .            1-1
+	8   .            8-13
+	7   .             4-4
+	6   .                5-5
+	5   .         50-38
+	4   .               4-2
+	3   .         30-54
+	2   .               9-5
+	1   .            21-14
 
 #---------------------------#
-PLAYER_NAMES = {
-	# "EOL_SCORP": ["Eol Scorpion"],
-	# "APMN": ["Apmn"],
-	# "SIBEL": ["SNOWBL4CK", "D3ATH^G0D"],
-	"SHINODA": ["Shinoda"],
-	"RAKI": ["Raknarok"],
-	"YUSUF": ["Yu$ufNi$ic"],
-	"GANNICUS": ["Gannicus"],
-	"THORIN": ["GranThorino", "thuren k-shild"],
-	"RAINY": ["Rainy"],
-	"HITMACHINE": ["HitMachine"],
-	"YODA": ["Yoda", "PIO"],
-	"NINKA": ["Recon|NinkaZy"],
-	"KURDISH": ["KurdishBeg"],
-	"NATHAN": ["Aow_NathanPearson"],
-	"DOBBY": ["Dizz|Raptor", "Dobby"],
-	"GOSPURE": ["GosPurePwneage", "Bilbo"],
-	"MEWTWO": ["Mewtwo"],
-	"PIKACHU": ["PiKaChu"],
-	"MUSTAFA": ["King.Mustafa"],
-	"JONES": ["Callan", "JonesBFME2"],
-	"SAURON": ["S@uron"],
-	"JEDGAR": ["J`Edgard"],
-	"DARYL": ["Daryl"],
-	"TEMPT": ["Temptation", "Lamma"],
-	"VITO": ["Vito"],
-	"OTTO": ["1.6 ArCh4Ng3L"],
-	"ECTH": ["Eol Ecthelion"],
-	"GLUTE": ["THE_GLUTE_MASTER"],
-	"GRENDAL": ["TaR|Gr3ndal"],
-	"MISHA": ["Vodishcka", "Cicus|Word"],
-	"ANDY": ["AndyBrandy`"],
-	"LOLO": ["Lothlorien"],
-	"ENUMA": ["ENUMAra"],
-	"AHWE": ["Ahwehawe"],
-	"SCARECROW": ["Scare^Cr0w"],
-	"FREEDOOM": ["FreeDooM"],
-	"ZORBA": ["Imperious", "Zorbalator"],
-	"MAKA": ["Maka`"],
-	"LAU": ["Farmer Lau"],
-	"IMPERIALIST": ["Imperialist"],
-	"HALET": ["RECON|Halet"],
-	"CASPER": ["Casper"],
-	"LUXUS": ["AoW|LuXuS"],
+PLAYER_DATA = {
+	# "EOL_SCORP": {
+		# "nicknames": ["Eol Scorpion"],
+	# "APMN": {
+		# "nicknames": ["Apmn"],
+	# "SIBEL": {
+		# "nicknames": ["SNOWBL4CK", "D3ATH^G0D"],
+	"URBY": {
+		"nicknames": ["Urby"]}, "discord_id": "@urby0572"},
+	"SHINODA": {
+		"nicknames": ["Shinoda"], "discord_id": "@shinoda7772"},
+	"RAKI": {
+		"nicknames": ["Raknarok"], "discord_id": "@shiraori1563"},
+	"YUSUF": {
+		"nicknames": ["Yu$ufNi$ic"], "discord_id": "@yusufnisic"},
+	"GANNICUS": {
+		"nicknames": ["Gannicus", "Azog"], "discord_id": "@gannicus1087"},
+	"THORIN": {
+		"nicknames": ["GranThorino", "thuren k-shild"], "discord_id": "@granthorino"},
+	"RAINY": {
+		"nicknames": ["Rainy"], "discord_id": "@ivanpetryakov"},
+	"HITMACHINE": {
+		"nicknames": ["HitMachine"], "discord_id": "@lightitup"},
+	"YODA": {
+		"nicknames": ["Yoda", "PIO"], "discord_id": None},
+	"NINKA": {
+		"nicknames": ["Recon|NinkaZy"], "discord_id": "@ninkazy"},
+	"KURDISH": {
+		"nicknames": ["KurdishBeg"], "discord_id": "@MirBeg#4983"},
+	"NATHAN": {
+		"nicknames": ["Aow_NathanPearson"], "discord_id": None},
+	"DOBBY": {
+		"nicknames": ["Dizz|Raptor", "Dobby"], "discord_id": None},
+	"GOSPURE": {
+		"nicknames": ["GosPurePwneage", "Bilbo"], "discord_id": "@Bilbo#6850"},
+	"MEWTWO": {
+		"nicknames": ["Mewtwo"], "discord_id": None},
+	"PIKACHU": {
+		"nicknames": ["PiKaChu"], "discord_id": "@PikacHu#7034"},
+	"MUSTAFA": {
+		"nicknames": ["King.Mustafa"], "discord_id": "@kingmustafa"},
+	"JONES": {
+		"nicknames": ["Callan", "JonesBFME2"], "discord_id": None},
+	"SAURON": {
+		"nicknames": ["S@uron"], "discord_id": "@sauron6137"},
+	"JEDGAR": {
+		"nicknames": ["J`Edgard"], "discord_id": None},
+	"DARYL": {
+		"nicknames": ["Daryl"], "discord_id": "@daryl123"},
+	"TEMPT": {
+		"nicknames": ["Temptation", "Lamma"], "discord_id": "@temptito"},
+	"VITO": {
+		"nicknames": ["Vito"], "discord_id": "@s_vito"},
+	"OTTO": {
+		"nicknames": ["1.6 ArCh4Ng3L"], "discord_id": "@_arch4ng3l_"},
+	"ECTH": {
+		"nicknames": ["Eol Ecthelion"], "discord_id": "@ecthelionbfme2"},
+	"GLUTE": {
+		"nicknames": ["THE_GLUTE_MASTER"], "discord_id": None},
+	"GRENDAL": {
+		"nicknames": ["TaR|Gr3ndal"], "discord_id": "@no.ob007"},
+	"MISHA": {
+		"nicknames": ["Vodishcka", "Cicus|Word"], "discord_id": "@misha7263"},
+	"ANDY": {
+		"nicknames": ["AndyBrandy`"], "discord_id": "@pina123456789"},
+	"LOLO": {
+		"nicknames": ["Lotlorien", "Darkness", "Lothlorien"], "discord_id": "@lothlorien2149"},
+	"ENUMA": {
+		"nicknames": ["ENUMAra"], "discord_id": "@enumara"},
+	"AHWE": {
+		"nicknames": ["Ahwehawe"], "discord_id": "@ahwehawe"},
+	"SCARECROW": {
+		"nicknames": ["Scare^Cr0w"], "discord_id": None},
+	"FREEDOOM": {
+		"nicknames": ["FreeDooM"], "discord_id": "@FreeDooM#4035"},
+	"ZORBA": {
+		"nicknames": ["Imperious", "Zorbalator"], "discord_id": "@zorbalator"},
+	"MAKA": {
+		"nicknames": ["Maka`"], "discord_id": None},
+	"LAU": {
+		"nicknames": ["Farmer Lau"], "discord_id": "@farmerlau"},
+	"IMPERIALIST": {
+		"nicknames": ["Imperialist"], "discord_id": "@imper_ur_her0"},
+	"HALET": {
+		"nicknames": ["RECON|Halet"], "discord_id": "@Getget#8380"},
+	"CASPER": {
+		"nicknames": ["Casper"], "discord_id": "@Casper#4924"},
+	"LUXUS": {
+		"nicknames": ["AoW|LuXuS"], "discord_id": "@aowluxus"},
 }	
 
 
@@ -88,9 +144,12 @@ PLAYER_NAMES = {
 #---------------------------#
 class Player:
 	# _last_played_chall_since_today = None
-	def __init__(self, key, name):
+	def __init__(self, key, value):
 		self.key = key
-		self.name = name[0]
+		self.names = value["nicknames"]
+		self.name = self.names[0]
+		self.discord_id = value["discord_id"]
+
 		self.rank = self.get_rank()
 		self.cha_wins = 0
 		self.cha_loses = 0
@@ -386,7 +445,7 @@ class Challenge:
 				since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
 				self._str_add_and_kick_or_none = f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
 			elif self.dont_score_mode:
-				self._str_add_and_kick_or_none = f"\nSpotUndefended: {self.defender.history.name} has not shown any activity in a week nor has attempted to arrange a play-date to defend his spot."
+				self._str_add_and_kick_or_none = f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
 			else:
 				self._str_add_and_kick_or_none = ""
 		return self._str_add_and_kick_or_none
@@ -575,10 +634,13 @@ def print_04_who_is_black():
 if __name__ == "__main__":
 	"""1. Instance PlayerHistory Objects"""
 	PLAYERS = {
-		key: Player(key, name) 
-		for key, name 
-		in PLAYER_NAMES.items()
+		key: Player(key, value) 
+		for key, value 
+		in PLAYER_DATA.items()
 	}
+	
+	
+	
 	# ic(PLAYERS)
 
 	"""2. Read csv"""
