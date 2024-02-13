@@ -28,18 +28,6 @@ TOP_10_LEGACY = {
 	1: "ECTH",
 }	
 
-		TOP 10
-	10  .           2-3
-	9   .            1-1
-	8   .            8-13
-	7   .             4-4
-	6   .                5-5
-	5   .         50-38
-	4   .               4-2
-	3   .         30-54
-	2   .               9-5
-	1   .            21-14
-
 #---------------------------#
 PLAYER_DATA = {
 	# "EOL_SCORP": {
@@ -49,7 +37,7 @@ PLAYER_DATA = {
 	# "SIBEL": {
 		# "nicknames": ["SNOWBL4CK", "D3ATH^G0D"],
 	"URBY": {
-		"nicknames": ["Urby"]}, "discord_id": "@urby0572"},
+		"nicknames": ["Urby"], "discord_id": "@urby0572"},
 	"SHINODA": {
 		"nicknames": ["Shinoda"], "discord_id": "@shinoda7772"},
 	"RAKI": {
