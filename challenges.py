@@ -36,6 +36,8 @@ PLAYER_DATA = {
 		# "nicknames": ["Apmn"],
 	# "SIBEL": {
 		# "nicknames": ["SNOWBL4CK", "D3ATH^G0D"],
+	"CBATS": {
+		"nicknames": ["CaveBats"], "discord_id": None},
 	"URBY": {
 		"nicknames": ["Urby"], "discord_id": "@urby0572"},
 	"SHINODA": {
