@@ -3,6 +3,8 @@ from pathlib import Path
 import pandas as pd
 from icecream import ic
 import py7zr
+from functools import cached_property
+from bidict import bidict
 
 #---------------------------------------------------------------------#
 """----------------------------GLOBALS------------------------------"""
@@ -14,7 +16,7 @@ CHALL_DATA_CSV = Path.cwd() / "chall_data.csv"
 
 
 #---------------------------#
-TOP_10_LEGACY = {
+TOP_10_LEGACY_STATUS = bidict({
 	#march 21 of 2021 by glute.
 	10: "VITO",
 	9: "DARYL",
@@ -26,7 +28,8 @@ TOP_10_LEGACY = {
 	3: "OTTO",
 	2: "SAURON",
 	1: "ECTH",
-}	
+})
+
 
 #---------------------------#
 PLAYER_DATA = {
@@ -131,16 +134,14 @@ PLAYER_DATA = {
 
 
 
-#---------------------------#
+#------------------------------------------Player.Class.01------------------------------------------#
 class Player:
-	# _last_played_chall_since_today = None
 	def __init__(self, key, value):
 		self.key = key
 		self.names = value["nicknames"]
 		self.name = self.names[0]
 		self.discord_id = value["discord_id"]
 
-		self.rank = self.get_rank()
 		self.cha_wins = 0
 		self.cha_loses = 0
 		self.challenges = []
@@ -152,66 +153,8 @@ class Player:
 		self.games_played_1v1 = 0
 		self.games_played_2v2 = 0
 		
-	@property	
-	def loses_total(self):
-		return self.games_played_total - self.wins_total
-	@property	
-	def loses_1v1_total(self):
-		return self.games_played_1v1 - self.wins1v1_total
-	@property	
-	def loses2v2_total(self):
-		return self.games_played_2v2 - self.wins2v2_total
-	
-	@property	
-	def fecha_de_alta(self):
-		# if hasattr
-		# return sorted([cha for cha in self.challenges], key=lambda x: x.index)[0]
-		return self.challenges[0]
 		
-	# @property	
-	# def last_played_chall(self):
-		# real_challenges = sorted([cha for cha in self.challenges if cha.is_cha], key=lambda x: x.index)
-		# real_challenges = sorted([cha for cha in self.challenges if cha.is_cha], key=lambda x: x.index)
-		# print(real_challenges)
-		# return self.challenges[-1].date
-		# if real_challenges:
-			# self.last_challenge = real_challenges[-1]
-			# return real_challenges[-1].date
-		# else:
-			# return None #"Never" # self.challenges[0].date
-		
-	# @property	
-	# def from_today_days_since_last_chall(self):
-		# if True:
-		# if self._last_played_chall_since_today is None:
-			# last_cha = self.last_played_chall()
-			# if last_cha is None:
-				# return "Never"
-			# else:
-				# last_cha = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
-				# self._last_played_chall_since_today = last_cha
-			
-		# return self._last_played_chall_since_today
-			
-	# def last_played_chall_since_today_string(self):	
-		# last_cha = self.last_played_chall()
-		# if last_cha:
-			# delta = round(((datetime.today() - self.last_played_chall()).days / 30), 2)
-			# return f"{self.name} has not played a challenge since {delta} months"
-		# else:
-			# return None
-		
-	def is_black(self):
-		return True if self.key in {PLAYERS["ANDY"].key, PLAYERS["LAU"].key} else False
-		
-	def cha_winrate(self):
-		if self.cha_wins == 0:
-			return 0
-		total_matches = self.cha_wins + self.cha_loses
-		assert total_matches == len(self.challenges)
-		return (self.cha_wins / total_matches) * 100.0
-		
-		
+	###--------------------------Public.Methods-----------------------###
 	def get_1v1_vs(self, other, printEm=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
 		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
@@ -230,95 +173,59 @@ class Player:
 			else:
 				return None
 		
+	###--------------------------Private.Methods-----------------------###
+	def get_cha_winrate(self):
+		if self.cha_wins == 0:
+			return 0
+		total_matches = self.cha_wins + self.cha_loses
+		assert total_matches == len(self.challenges)
+		return (self.cha_wins / total_matches) * 100.0
+
+	###--------------------------Public.Properties-----------------------###
+	@cached_property
+	def rank(self):
+		if rank:= TOP_10_LEGACY_STATUS.inverse.get(self.key):
+			return rank
+		else:
+			rank = len(TOP_10_LEGACY_STATUS)+1
+			TOP_10_LEGACY_STATUS[rank] = self.key
+			return rank
+
+	@cached_property
+	def loses_total(self):
+		return self.games_played_total - self.wins_total
+		
+	@cached_property	
+	def loses_1v1_total(self):
+		return self.games_played_1v1 - self.wins1v1_total
+		
+	@cached_property	
+	def loses2v2_total(self):
+		return self.games_played_2v2 - self.wins2v2_total
+	
+	@cached_property
+	def fecha_de_alta(self):
+		return self.challenges[0]
+		
+	@cached_property
+	def is_black(self):
+		return True if self.key in {PLAYERS["ANDY"].key, PLAYERS["LAU"].key} else False
+
 	def __gt__(self, other):
 		bol = self.get_1v1_vs(other, printEm=False)
 		if bol is None:
-			bol = self.cha_winrate()  > other.cha_winrate()
+			bol = self.get_cha_winrate()  > other.get_cha_winrate()
 		print(f"{self.key} better than {other.key} = {bol}")
 		return bol
-		
-	def update_match_history(wins1v1, wins2v2, loses1v1, loses2v2):
-		self.wins1v1 = wins1v1
-		self.wins2v2 = wins2v2
-		self.loses1v1 = loses1v1
-		self.loses2v2 = loses2v2
-		self.wins = wins1v1 + wins2v2
-		self.loses = loses1v1 + loses2v2
-		
-	def get_rank(self):
-		inverted_dict = {value: key for key, value in TOP_10_LEGACY.items()}
-		rank = inverted_dict.get(self.key, None)
-		if rank is None:
-			rank = len(TOP_10_LEGACY)+1
-			TOP_10_LEGACY[rank] = self.key
-		return rank
-		
-	def __str__(self):
-		return f"|{self.key}|\tRank:{self.rank}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+
 	def __repr__(self):
 		return f"|{self.key}|\tRank:{self.rank}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 
-#---------------------------#
+
+
+
+#------------------------------------------Challenge.Class.02------------------------------------------#
 class Challenge:
-	_str_add_and_kick_or_none = None
-	_str_score1v1 = None
-	_str_score2v2 = None
-	_str_defended_or_took_over = None
-	_str_version_or_no_score = None
-	_str_challenge_or_none = None
-	_str_bo9_or_b4b5 = None
-	_replays_folder_name = None
-	#---------------------------#
-	class PlayerInChallenge:
-		_last_challenge = None
-		_days_since_last_chall = None
-		def __init__(self, master, key, wins1v1, wins2v2):
-			self.key = key
-			self.master = master
-			self.wins1v1 = wins1v1
-			self.wins2v2 = wins2v2
-			self.wins = wins1v1 + wins2v2
-			self.history = PLAYERS[key]
-			self.history.challenges.append(master)
-			self.rank = self.history.rank
-			
-		@property
-		def rank_ordinal(self):
-			ORDINAL = {
-				1: "1st",
-				2: "2nd",
-				3: "3rd",
-				4: "4th",
-				5: "5th",
-				6: "6th",
-				7: "7th",
-				8: "8th",
-				9: "9th",
-				10: "10th"
-			}
-			return ORDINAL.get(self.rank, "from outside the list")
-			# return ORDINAL[self.rank]
-			
-		@property
-		def last_challenge(self):
-			if self._last_challenge is None:
-				self._last_challenge = self.history.challenges[-2]
-			return self._last_challenge
-		
-			
-		@property
-		def days_since_last_chall(self):	
-			if self._days_since_last_chall is None:
-				if self.last_challenge is None:
-					self._days_since_last_chall = None # self.history.fecha_de_alta.date
-				else:
-					delta = self.master.date - self.last_challenge.date
-					self._days_since_last_chall = delta.days # /30
-			return self._days_since_last_chall
-			
-		def __repr__(self):
-			return f"|{self.history.key}|"
-	#---------------------------#
 	def __init__(self, index, row):
 		self.index = index
 		self.version = row["version"]
@@ -327,13 +234,13 @@ class Challenge:
 		self.dont_score_mode = self.version == "NO_SCORE"
 		self.is_add_and_kick = self.version == "ADD_AND_KICK"
 		if not self.dont_score_mode and not self.is_add_and_kick:
-			player1 = Challenge.PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
-			player2 = Challenge.PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
+			player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
+			player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 			self.winner = player2 if player2.wins > player1.wins else player1
 			self.loser = player1 if self.winner == player2 else player2
 		else:
-			player1 = Challenge.PlayerInChallenge(self, row["p1"], 0, 0)
-			player2 = Challenge.PlayerInChallenge(self, row["p2"], 0, 0)
+			player1 = PlayerInChallenge(self, row["p1"], 0, 0)
+			player2 = PlayerInChallenge(self, row["p2"], 0, 0)
 			self.winner = player1 
 			self.loser = player2 
 		self.games_total = self.winner.wins + self.loser.wins
@@ -348,24 +255,17 @@ class Challenge:
 		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.dont_score_mode and not self.is_add_and_kick else ""
 		
 		if self.dont_score_mode:
-			self.update_histories(issue_score=False)
+			self.__update_histories(issue_score=False)
 		elif self.str_add_and_kick_or_none:
-			self.add_p1_kick_p2()
+			self.__add_p1_kick_p2()
 		elif self.games_total:
-			self.update_histories(issue_score=True)	
+			self.__update_histories(issue_score=True)	
 			
-		self.top10 = self.save_current_top_10()
+		self.top10 = self.__save_current_top_10()
 		self.disputed_rank = self.defender.rank
 		
-		
-	
-	@property
-	def is_cha(self):
-		return not self.str_add_and_kick_or_none and not self.dont_score_mode
-		
-		
-		
-	def add_p1_kick_p2(self):
+	###--------------------------Private.Methods-----------------------###
+	def __add_p1_kick_p2(self):
 		last_spot = len(PLAYERS)
 		if self.winner.rank > self.loser.rank:
 			for player in self.everyone_else_on_list:
@@ -375,8 +275,8 @@ class Challenge:
 					player.rank -= 1
 			self.winner.history.rank = 10 
 			self.loser.history.rank += last_spot # 
-		
-	def save_current_top_10(self):
+			
+	def __save_current_top_10(self):
 		top_10_as_dict = {
 			player.rank: player
 			for player in PLAYERS.values()
@@ -386,91 +286,9 @@ class Challenge:
 		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
 			as_string += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		return as_string
-			
-	def __repr__(self):
-		return f"|Cha{self.index}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
-		return self._str_score2v2
 	
-	@property
-	def str_bo9_or_b4b5(self):
-		if self._str_bo9_or_b4b5 is None:
-			if not self.games2v2:
-				# self._str_bo9_or_b4b5 = "Challenge Mode: Best of 9 in 1vs1."
-				self._str_bo9_or_b4b5 = ""
-			else:
-				self._str_bo9_or_b4b5 = "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-		return self._str_bo9_or_b4b5
-		
-	@property
-	def str_challenge_or_none(self):
-		if self._str_challenge_or_none is None:
-			if not self.is_add_and_kick: #self.is_cha:
-				self._str_challenge_or_none = f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{self.str_bo9_or_b4b5} "
-			else:
-				self._str_challenge_or_none = ""
-		return self._str_challenge_or_none
-		
-	@property
-	def str_score1v1_or_none(self):
-		if self._str_score1v1 is None:
-			if self.games1v1:
-				self._str_score1v1 = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-			else:
-				self._str_score1v1 = ""
-		return self._str_score1v1
-		
-	@property
-	def str_score2v2_or_none(self):
-		if self._str_score2v2 is None:
-			if self.games2v2:
-				self._str_score2v2 = f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-			else:
-				self._str_score2v2 = ""
-		return self._str_score2v2
-		
-	@property
-	def str_add_and_kick_or_none(self):
-		if self._str_add_and_kick_or_none is None:
-			if self.is_add_and_kick:
-				since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
-				self._str_add_and_kick_or_none = f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
-			elif self.dont_score_mode:
-				self._str_add_and_kick_or_none = f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
-			else:
-				self._str_add_and_kick_or_none = ""
-		return self._str_add_and_kick_or_none
-		
-	@property
-	def str_defended_or_took_over(self):
-		if self._str_defended_or_took_over is None:
-			if self.is_add_and_kick:
-				self._str_defended_or_took_over = f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
-			else:
-				if self.defender is self.winner:
-					self._str_defended_or_took_over = f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
-				else:
-					self._str_defended_or_took_over = f"\n\n+ {self.challenger.history.name} has {self.flawless}took over the {self.defender.rank_ordinal} spot!" 
-		return self._str_defended_or_took_over
-		
-	@property
-	def str_version_or_no_score(self):
-		if self._str_version_or_no_score is None:
-			if self.games_total:
-				self._str_version_or_no_score = f"\n\nGames were played in {self.version}"
-			else:
-				self._str_version_or_no_score = "\n\nNo wins or loses have been scored."
-		return self._str_version_or_no_score
-		
-	@property
-	def replays_folder_name(self):
-		if self._replays_folder_name is None:
-			self._replays_folder_name = f"Challenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
-		return self._replays_folder_name
-		
-	def __str__(self):
-		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
-		
-	def update_histories(self, issue_score):
+	
+	def __update_histories(self, issue_score):
 		if self.winner.history.rank > self.loser.history.rank:
 			for player in self.everyone_else_on_list:
 				if player.rank > self.winner.history.rank:
@@ -497,8 +315,115 @@ class Challenge:
 			self.loser.history.wins_total += self.loser.wins
 			self.loser.history.wins1v1_total += self.loser.wins1v1
 			self.loser.history.wins2v2_total += self.loser.wins2v2
-		
 
+
+	###--------------------------Public.Properties-----------------------###
+	@cached_property
+	def is_cha(self):
+		return not self.str_add_and_kick_or_none and not self.dont_score_mode
+		
+	@cached_property
+	def str_bo9_or_b4b5(self):
+		if not self.games2v2:
+			# return "Challenge Mode: Best of 9 in 1vs1."
+			return ""
+		else:
+			return "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+		
+	@cached_property
+	def str_challenge_or_none(self):
+		if not self.is_add_and_kick: #self.is_cha:
+			return f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{self.str_bo9_or_b4b5} "
+		else:
+			return ""
+		
+	@cached_property
+	def str_score1v1_or_none(self):
+		return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}" if self.games1v1 else ""
+		
+	@cached_property
+	def str_score2v2_or_none(self):
+		return f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games2v2 else ""
+		
+	@cached_property
+	def str_add_and_kick_or_none(self):
+		if self.is_add_and_kick:
+			since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
+			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
+		elif self.dont_score_mode:
+			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
+		else:
+			return ""
+		
+	@cached_property
+	def str_defended_or_took_over(self):
+		if self.is_add_and_kick:
+			return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
+		if self.defender is self.winner:
+			return f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
+		else:
+			return f"\n\n+ {self.challenger.history.name} has {self.flawless}took over the {self.defender.rank_ordinal} spot!" 
+		
+	@cached_property
+	def str_version_or_no_score(self):
+		if self.games_total:
+			return f"\n\nGames were played in {self.version}"
+		else:
+			return "\n\nNo wins or loses have been scored."
+		
+	@cached_property
+	def replays_folder_name(self):
+		return f"Challenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
+		
+	def __repr__(self):
+		return f"|Cha{self.index}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
+
+	def __str__(self):
+		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
+
+#------------------------------------------PlayerInChallenge.Class.03------------------------------------------#
+class PlayerInChallenge:
+	def __init__(self, master, key, wins1v1, wins2v2):
+		self.key = key
+		self.master = master
+		self.wins1v1 = wins1v1
+		self.wins2v2 = wins2v2
+		self.wins = wins1v1 + wins2v2
+		self.history = PLAYERS[key]
+		self.history.challenges.append(master)
+		self.rank = self.history.rank
+		
+	###--------------------------Public.Properties-----------------------###
+	@cached_property
+	def rank_ordinal(self):
+		ORDINAL = {
+			1: "1st",
+			2: "2nd",
+			3: "3rd",
+			4: "4th",
+			5: "5th",
+			6: "6th",
+			7: "7th",
+			8: "8th",
+			9: "9th",
+			10: "10th"
+		}
+		return ORDINAL.get(self.rank, "from outside the list")
+		
+	@cached_property
+	def last_challenge(self):
+		return self.history.challenges[-2]
+	
+	@cached_property
+	def days_since_last_chall(self):	
+		if self.last_challenge is None:
+			return None # self.history.fecha_de_alta.date
+		else:
+			delta = self.master.date - self.last_challenge.date
+			return delta.days # /30
+		
+	def __repr__(self):
+		return f"|{self.history.key}|"
 
 #---------------------------------------------------------------------#
 """---------------------------FUNCIONES------------------------------"""
@@ -584,12 +509,6 @@ def write_chalog():
 		print(f"* {cha_file.name} was updated")
 	
 		
-# def print_02_sorted_players_by_activity():
-	# sorted_players = list(sorted(PLAYERS.values(), key=lambda player: player.from_today_days_since_last_chall))
-
-	# ordered_player_dict = {player.name: player.from_today_days_since_last_chall for player in sorted_players}
-	# dictt = {player.key: player.from_today_days_since_last_chall for player in sorted_players}
-	# ic(sorted_players)
 		
 def print_03_player_vs_player():
 	PLAYERS["ECTH"].get_1v1_vs(PLAYERS["ANDY"], printEm=True)
