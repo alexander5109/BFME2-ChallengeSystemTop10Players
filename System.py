@@ -2,10 +2,10 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 from icecream import ic
+import json
 import py7zr
 from functools import cached_property
 from bidict import bidict
-import Players
 
 #---------------------------------------------------------------------#
 """----------------------------GLOBALS------------------------------"""
@@ -347,7 +347,7 @@ class PlayerInChallenge:
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
 	def __init__(self, chacsv, chalog, player_data, write_log=False, write_csv=False):
-		self.PLAYERS = { key: Player(key, value) for key, value in player_data.items() }
+		self.PLAYERS = { key: Player(key, value) for key, value in player_data["active"].items() }
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
@@ -465,7 +465,7 @@ class ChallengeSystem:
 #-------------------------------------------------------------------------------------------------------------#
 if __name__ == "__main__":
 	sistema = ChallengeSystem(
-		player_data = Players.PLAYER_DATA,
+		player_data = json.load(open("players.json")),
 		chacsv=Path.cwd() / "challenges.csv",
 		chalog=Path.cwd() / "challenges.log",
 		write_log=True,
