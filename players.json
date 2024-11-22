@@ -11,6 +11,10 @@
         }
     },
     "active": {
+        "JASKIER": {
+            "nicknames": ["Jaskier"],
+            "discord_id": null
+        },
         "CBATS": {
             "nicknames": ["CaveBats"],
             "discord_id": null
