@@ -11,6 +11,10 @@
         }
     },
     "active": {
+        "ASTRO": {
+            "nicknames": ["ASTRO"],
+            "discord_id": null
+        },
         "JASKIER": {
             "nicknames": ["Jaskier"],
             "discord_id": null
