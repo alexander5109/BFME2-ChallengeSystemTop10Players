@@ -11,9 +11,9 @@ from bidict import bidict
 #"""-------------------------------------------Player.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class Player:
-	def __init__(self, chasys, key, value):
-		self.chasys = chasys
+	def __init__(self, key, value, rank):
 		self.key = key
+		self.rank = rank
 		self.names = value["nicknames"]
 		self.name = self.names[0]
 		self.discord_id = value["discord_id"]
@@ -58,14 +58,14 @@ class Player:
 		return (self.cha_wins / total_matches) * 100.0
 
 	###--------------------------Public.Properties-----------------------###
-	@cached_property
-	def rank(self):
-		if rank:= self.chasys.legacy.inverse.get(self.key):
-			return rank
+	@classmethod
+	def instance_with_rank(cls, key, value, legacy):
+		if rank:= legacy.inverse.get(key):
+			return cls(key, value, rank)
 		else:
-			rank = len(self.chasys.legacy)+1
-			self.chasys.legacy[rank] = self.key
-			return rank
+			rank = len(legacy)+1
+			legacy[rank] = key
+			return cls(key, value, rank)
 
 	@cached_property
 	def loses_total(self):
@@ -329,8 +329,8 @@ class PlayerInChallenge:
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
 	def __init__(self, chacsv, chalog, player_data, write_log=False, write_csv=False):
-		self.legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
-		self.PLAYERS = { key: Player(self, key, value) for key, value in player_data["active"].items() }
+		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
+		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
