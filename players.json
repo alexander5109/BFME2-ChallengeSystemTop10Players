@@ -187,5 +187,20 @@
             "nicknames": ["AoW|LuXuS"],
             "discord_id": "@aowluxus"
         }
+    }, 
+    "legacy": {
+		"date": "2021-03-21",
+		"top10" : {
+			"10": "VITO",
+			"9": "DARYL",
+			"8": "TEMPT",
+			"7": "SCARECROW",
+			"6": "LAU",
+			"5": "IMPERIALIST",
+			"4": "AHWE",
+			"3": "OTTO",
+			"2": "SAURON",
+			"1": "ECTH"
+		}
     }
 }

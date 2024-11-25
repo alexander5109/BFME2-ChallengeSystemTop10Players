@@ -7,30 +7,12 @@ import py7zr
 from functools import cached_property
 from bidict import bidict
 
-#---------------------------------------------------------------------#
-"""----------------------------GLOBALS------------------------------"""
-#---------------------------------------------------------------------#
-
-#---------------------------#
-TOP_10_LEGACY_STATUS = bidict({
-	#March 21 of 2021 by Glute.
-	10: "VITO",
-	9: "DARYL",
-	8: "TEMPT",
-	7: "SCARECROW",
-	6: "LAU",
-	5: "IMPERIALIST",
-	4: "AHWE",
-	3: "OTTO",
-	2: "SAURON",
-	1: "ECTH",
-})
-
 #-------------------------------------------------------------------------------------------------------------#
 #"""-------------------------------------------Player.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class Player:
-	def __init__(self, key, value):
+	def __init__(self, chasys, key, value):
+		self.chasys = chasys
 		self.key = key
 		self.names = value["nicknames"]
 		self.name = self.names[0]
@@ -78,11 +60,11 @@ class Player:
 	###--------------------------Public.Properties-----------------------###
 	@cached_property
 	def rank(self):
-		if rank:= TOP_10_LEGACY_STATUS.inverse.get(self.key):
+		if rank:= self.chasys.legacy.inverse.get(self.key):
 			return rank
 		else:
-			rank = len(TOP_10_LEGACY_STATUS)+1
-			TOP_10_LEGACY_STATUS[rank] = self.key
+			rank = len(self.chasys.legacy)+1
+			self.chasys.legacy[rank] = self.key
 			return rank
 
 	@cached_property
@@ -128,8 +110,8 @@ class Player:
 #"""---------------------------------------Challenge.Class.02----------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class Challenge:
-	def __init__(self, master, index, row):
-		self.master = master
+	def __init__(self, chasys, index, row):
+		self.chasys = chasys
 		self.index = index
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
@@ -153,7 +135,7 @@ class Challenge:
 			
 		self.challenger = player1 if player1.rank > player2.rank else player2
 		self.defender = player1 if self.challenger == player2 else player2
-		self.everyone_else_on_list = {player for player in self.master.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
+		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
 		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
 		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.dont_score_mode and not self.is_add_and_kick else ""
 		
@@ -169,7 +151,7 @@ class Challenge:
 		
 	###--------------------------Private.Methods-----------------------###
 	def __add_p1_kick_p2(self):
-		last_spot = len(self.master.PLAYERS)
+		last_spot = len(self.chasys.PLAYERS)
 		if self.winner.rank > self.loser.rank:
 			for player in self.everyone_else_on_list:
 				if player.rank > self.winner.rank:
@@ -182,7 +164,7 @@ class Challenge:
 	def __save_current_top_10(self):
 		top_10_as_dict = {
 			player.rank: player
-			for player in self.master.PLAYERS.values()
+			for player in self.chasys.PLAYERS.values()
 			if 1 <= player.rank <= 10
 		}
 		as_string = "\t\tTOP 10\n"
@@ -301,7 +283,7 @@ class PlayerInChallenge:
 		self.wins1v1 = wins1v1
 		self.wins2v2 = wins2v2
 		self.wins = wins1v1 + wins2v2
-		self.history = self.master.master.PLAYERS[key]
+		self.history = self.master.chasys.PLAYERS[key]
 		self.history.challenges.append(master)
 		self.rank = self.history.rank
 		
@@ -347,7 +329,8 @@ class PlayerInChallenge:
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
 	def __init__(self, chacsv, chalog, player_data, write_log=False, write_csv=False):
-		self.PLAYERS = { key: Player(key, value) for key, value in player_data["active"].items() }
+		self.legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
+		self.PLAYERS = { key: Player(self, key, value) for key, value in player_data["active"].items() }
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
