@@ -15,7 +15,6 @@ class Player:
 		self.key = key
 		self.rank = rank
 		self.names = value["nicknames"]
-		self.name = self.names[0]
 		self.discord_id = value["discord_id"]
 
 		self.cha_wins = 0
@@ -66,6 +65,10 @@ class Player:
 			rank = len(legacy)+1
 			legacy[rank] = key
 			return cls(key, value, rank)
+
+	@cached_property
+	def name(self):
+		return self.names[0]
 
 	@cached_property
 	def loses_total(self):
@@ -329,14 +332,17 @@ class PlayerInChallenge:
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
 	def __init__(self, chacsv, chalog, player_data, write_log=False, write_csv=False):
-		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
-		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
 			raise Exception("No existe el archivo de los .log")
 		self.chacsv = chacsv
 		self.chalog = chalog
+		
+		
+		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
+		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
+		self.CHALLENGES = { index: Challenge(self, index, row) for index, row  in self.data.iterrows() }
 		if write_log:
 			self.__write_chalog()
 		if write_csv:
@@ -411,9 +417,6 @@ class ChallengeSystem:
 			
 			
 	###------------------------------Properties-----------------------###
-	@cached_property
-	def CHALLENGES(self):
-		return { index: Challenge(self, index, row) for index, row  in self.data.iterrows() }
 	
 	@cached_property
 	def data(self):
