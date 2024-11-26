@@ -159,6 +159,7 @@ class ChallengeEvent:
 		
 	
 	def __02_compute_logic(self):
+		""" the smaller rank, the more "up". is_kick_add_mode: winner was added in the 10'th spot, so everyone down is further pushed down.. otherwise: winner gets defender's spot, and everyone down is further pushed down """
 		if self.is_normal_mode:
 			self.winner.history.add_challenge_record(self)
 			self.loser.history.add_challenge_record(self)
@@ -174,7 +175,6 @@ class ChallengeEvent:
 				continue
 			elif player.rank > self.winner.rank:
 				player.rank -= 1
-				
 			if self.is_kick_add_mode and 11 > player.rank > self.loser.rank:
 				player.rank -= 1
 			elif player.rank > self.loser.rank:
@@ -191,14 +191,9 @@ class ChallengeEvent:
 		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
 			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 
+
+
 	###--------------------------Public.Properties-----------------------###
-	# @cached_property
-	# def players_involved(self):
-		# return {
-			# self.winner.key: self.winner
-			# self.loser.key: self.loses
-		# }
-	
 	@cached_property
 	def winner(self):
 		return self.player1 if (self.player1.wins > self.player2.wins or not self.is_normal_mode) else self.player2
@@ -214,7 +209,6 @@ class ChallengeEvent:
 	@cached_property
 	def defender(self):
 		return self.player1 if self.challenger is self.player2 else self.player2
-		
 		
 	@cached_property
 	def games_total(self):
@@ -239,68 +233,72 @@ class ChallengeEvent:
 	@cached_property
 	def is_normal_mode(self):
 		return not self.is_no_score_mode and not self.is_kick_add_mode
-    
-    
-	@cached_property
-	def str_bo9_or_b4b5(self):
-		if not self.games2v2:
-			# return "Challenge Mode: Best of 9 in 1vs1."
-			return ""
-		else:
-			return "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-		
-	@cached_property
-	def str_challenge_or_none(self):
-		if not self.is_kick_add_mode:
-			return f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{self.str_bo9_or_b4b5} "
-		else:
-			return ""
-		
-	@cached_property
-	def str_score1v1_or_none(self):
-		return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}" if self.games1v1 else ""
-		
-	@cached_property
-	def str_score2v2_or_none(self):
-		return f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games2v2 else ""
-		
-	@cached_property
-	def str_add_and_kick_or_none(self):
-		if self.is_kick_add_mode:
-			since_last_event = f'Since Challenge{self.defender.previous_challenge.key}'
-			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
-		elif self.is_no_score_mode:
-			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
-		else:
-			return ""
-		
-	@cached_property
-	def str_defended_or_took_over(self):
-		if self.is_kick_add_mode:
-			return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
-			
-		flawless = "flawlessly " if self.loser.wins == 0 and not self.is_no_score_mode and not self.is_kick_add_mode else ""
-		if self.defender is self.winner:
-			return f"\n\n+ {self.defender.history.name} has {flawless}defended the {self.defender.rank_ordinal} spot!"
-		else:
-			return f"\n\n+ {self.challenger.history.name} has {flawless}took over the {self.defender.rank_ordinal} spot!" 
-		
-	@cached_property
-	def str_version_or_no_score(self):
-		if self.games_total:
-			return f"\n\nGames were played in {self.version}"
-		else:
-			return "\n\nNo wins or loses have been scored."
 		
 	@cached_property
 	def replays_folder_name(self):
 		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
 		
+	# @cached_property
+	# def players_involved(self):
+		# return {
+			# self.winner.key: self.winner
+			# self.loser.key: self.loses
+		# }
+		
+
+
+
+	###--------------------------Public.dundermethod-----------------------###
 	def __repr__(self):
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 
 	def __str__(self):
-		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.key}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
+		def str_bo9_or_b4b5():
+			if not self.games2v2:
+				# return "Challenge Mode: Best of 9 in 1vs1."
+				return ""
+			else:
+				return "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+			
+		def str_score1v1_or_none():
+			return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}" if self.games1v1 else ""
+			
+		def str_score2v2_or_none():
+			return f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games2v2 else ""
+			
+		def str_add_and_kick_or_none():
+			if self.is_kick_add_mode:
+				since_last_event = f'Since Challenge{self.defender.previous_challenge.key}'
+				return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
+			elif self.is_no_score_mode:
+				return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
+			else:
+				return ""
+				
+		def str_challenge_or_none():
+			if not self.is_kick_add_mode:
+				return f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{str_bo9_or_b4b5()} "
+			else:
+				return ""
+			
+		def str_version_or_no_score():
+			if self.games_total:
+				return f"\n\nGames were played in {self.version}"
+			else:
+				return "\n\nNo wins or loses have been scored."
+				
+		def str_defended_or_took_over():
+			if self.is_kick_add_mode:
+				return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
+				
+			flawless = "flawlessly " if self.loser.wins == 0 and not self.is_no_score_mode and not self.is_kick_add_mode else ""
+			if self.defender is self.winner:
+				return f"\n\n+ {self.defender.history.name} has {flawless}defended the {self.defender.rank_ordinal} spot!"
+			else:
+				return f"\n\n+ {self.challenger.history.name} has {flawless}took over the {self.defender.rank_ordinal} spot!" 
+				
+			
+		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.key}\n- Update {self.dateString}{str_challenge_or_none()}\n{str_score1v1_or_none()}{str_score2v2_or_none()}{str_add_and_kick_or_none()}{str_defended_or_took_over()}{self.custom_msg}{str_version_or_no_score()}\n\nLet the challenges continue!\n\n{self.top10}```"
 
 
 
