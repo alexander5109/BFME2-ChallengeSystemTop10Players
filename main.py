@@ -158,60 +158,57 @@ class ChallengeEvent:
 		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 		
-		self.__asegurar_integridad_de_row()
+		self.__01_asegurar_integridad_de_row()
+		self.__02_compute_logic()
+		self.__03_freeze_current_top_10_string()
+
+
+	###--------------------------Private.Methods-----------------------###
+	def __01_asegurar_integridad_de_row(self):
+		if not self.cha_type is ScoreMode.NORMAL_MODE and self.games_total:
+			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.cha_type}.")
 		
+	
+	def __02_compute_logic(self):
 		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
 
 		if self.cha_type is ScoreMode.KICK_ADD_MODE:
-			self.__add_p1_kick_p2()
+			if self.challenger is self.winner:
+				for player in self.everyone_else_on_list:
+					if player.rank > self.winner.rank:
+						player.rank -= 1
+					if self.loser.rank < player.rank < 11:
+						player.rank -= 1
+				self.winner.history.rank = 10 
+				self.loser.history.rank += len(self.chasys.PLAYERS)
 		else:
-			self.__update_histories()	
+			if self.challenger is self.winner:
+				for player in self.everyone_else_on_list:
+					if player.rank > self.winner.rank:
+						player.rank -= 1
+					if player.rank > self.loser.rank:
+						player.rank += 1
+				self.winner.history.rank = self.loser.rank
+				self.loser.history.rank += 1 
+				
+			if not self.cha_type is ScoreMode.NORMAL_MODE:
+				return;
+				
+			self.winner.history.add_challenge_record(self)
+			self.loser.history.add_challenge_record(self)
 			
-		self.top10 = self.__save_current_top_10()
-		self.disputed_rank = self.defender.rank
-		
-	###--------------------------Private.Methods-----------------------###
-	def __asegurar_integridad_de_row(self):
-		if not self.cha_type is ScoreMode.NORMAL_MODE and self.games_total:
-			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.cha_type}.")
 			
-	def __save_current_top_10(self):
+			
+			
+	def __03_freeze_current_top_10_string(self):
 		top_10_as_dict = {
 			player.rank: player
 			for player in self.chasys.PLAYERS.values()
 			if 1 <= player.rank <= 10
 		}
-		as_string = "\t\tTOP 10\n"
+		self.top10 = "\t\tTOP 10\n"
 		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
-			as_string += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-		return as_string
-		
-	def __add_p1_kick_p2(self):
-		if self.challenger is self.winner:
-			for player in self.everyone_else_on_list:
-				if player.rank > self.winner.rank:
-					player.rank -= 1
-				if self.loser.rank < player.rank < 11:
-					player.rank -= 1
-			self.winner.history.rank = 10 
-			self.loser.history.rank += len(self.chasys.PLAYERS)
-	
-	
-	def __update_histories(self):
-		if self.challenger is self.winner:
-			for player in self.everyone_else_on_list:
-				if player.rank > self.winner.history.rank:
-					player.rank -= 1
-				if player.rank > self.loser.history.rank:
-					player.rank += 1
-			self.winner.history.rank = self.loser.history.rank
-			self.loser.history.rank += 1
-		if not self.cha_type is ScoreMode.NORMAL_MODE:
-			return;
-			
-		self.winner.history.add_challenge_record(self)
-		self.loser.history.add_challenge_record(self)
-		
+			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 
 	###--------------------------Public.Properties-----------------------###
 	# @cached_property
