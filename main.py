@@ -30,6 +30,28 @@ class Player:
 		
 		
 	###--------------------------Public.Methods-----------------------###
+	def add_challenge_record(self, challenge):
+		if challenge.winner.key == self.key:
+			self.cha_wins += 1
+			self.wins_total += challenge.winner.wins
+			self.wins1v1_total += challenge.winner.wins1v1
+			self.wins2v2_total += challenge.winner.wins2v2
+		elif challenge.loser.key == self.key:
+			self.cha_loses += 1
+			self.wins_total += challenge.loser.wins
+			self.wins1v1_total += challenge.loser.wins1v1
+			self.wins2v2_total += challenge.loser.wins2v2
+		else:
+			raise Exception("This player didn't even participate")
+		
+		self.games_played_total += challenge.games_total
+		self.games_played_1v1 += challenge.games1v1
+		self.games_played_2v2 += challenge.games2v2
+		
+	
+	
+	
+	
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
 		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
@@ -187,27 +209,19 @@ class Challenge:
 			self.loser.history.rank += 1
 		if not issue_score:
 			return;
-		
-		self.winner.history.cha_wins += 1
-		self.loser.history.cha_loses += 1
 			
+		self.winner.history.add_challenge_record(self)
+		self.loser.history.add_challenge_record(self)
 		
-		self.winner.history.games_played_total += self.games_total
-		self.winner.history.games_played_1v1 += self.games1v1
-		self.winner.history.games_played_2v2 += self.games2v2
-		self.winner.history.wins_total += self.winner.wins
-		self.winner.history.wins1v1_total += self.winner.wins1v1
-		self.winner.history.wins2v2_total += self.winner.wins2v2
-		
-		self.loser.history.games_played_total += self.games_total
-		self.loser.history.games_played_1v1 += self.games1v1
-		self.loser.history.games_played_2v2 += self.games2v2
-		self.loser.history.wins_total += self.loser.wins
-		self.loser.history.wins1v1_total += self.loser.wins1v1
-		self.loser.history.wins2v2_total += self.loser.wins2v2
-
 
 	###--------------------------Public.Properties-----------------------###
+	# @cached_property
+	# def players_involved(self):
+		# return {
+			# self.winner.key: self.winner
+			# self.loser.key: self.loses
+		# }
+	
 	@cached_property
 	def is_cha(self):
 		return not self.str_add_and_kick_or_none and not self.dont_score_mode
