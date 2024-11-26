@@ -132,19 +132,19 @@ class Player:
 
 
 #-------------------------------------------------------------------------------------------------------------#
-#"""---------------------------------------Challenge.Class.02----------------------------------------------"""#
+#"""---------------------------------------ChallengeEvent.Class.02----------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
-class Challenge:
-	def __init__(self, chasys, index, row):
+class ChallengeEvent:
+	def __init__(self, chasys, key, row):
 		self.chasys = chasys
-		self.index = index
+		self.key = key
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
 		self.is_dont_score_mode = self.version == "NO_SCORE"
 		self.is_add_and_kick = self.version == "ADD_AND_KICK"
 		self.is_normal = not self.is_dont_score_mode and not self.is_add_and_kick
-		if not self.is_dont_score_mode and not self.is_add_and_kick:
+		if self.is_normal:
 			player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 			player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 			self.winner = player2 if player2.wins > player1.wins else player1
@@ -165,13 +165,11 @@ class Challenge:
 		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
 		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.is_dont_score_mode and not self.is_add_and_kick else ""
 		
-		if self.is_add_and_kick:
-			self.__add_p1_kick_p2()
-			
-		elif self.is_dont_score_mode:
+		if self.is_dont_score_mode:
 			self.__update_histories(issue_score=False)
-			
-		elif self.is_normal:
+		elif self.is_add_and_kick:
+			self.__add_p1_kick_p2()
+		elif self.games_total:
 			self.__update_histories(issue_score=True)	
 			
 		self.top10 = self.__save_current_top_10()
@@ -254,7 +252,7 @@ class Challenge:
 	@cached_property
 	def str_add_and_kick_or_none(self):
 		if self.is_add_and_kick:
-			since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
+			since_last_event = f'Since Challenge{self.defender.last_challenge.key if self.defender.last_challenge else None}'
 			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
 		elif self.is_dont_score_mode:
 			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
@@ -279,13 +277,13 @@ class Challenge:
 		
 	@cached_property
 	def replays_folder_name(self):
-		return f"Challenge{self.index}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
+		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
 		
 	def __repr__(self):
-		return f"|Cha{self.index}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
+		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 
 	def __str__(self):
-		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.index}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
+		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.key}\n- Update {self.dateString}{self.str_challenge_or_none}\n{self.str_score1v1_or_none}{self.str_score2v2_or_none}{self.str_add_and_kick_or_none}{self.str_defended_or_took_over}{self.custom_msg}{self.str_version_or_no_score}\n\nLet the challenges continue!\n\n{self.top10}```"
 
 
 
@@ -298,14 +296,14 @@ class Challenge:
 #"""---------------------------------------PlayerInChallenge.Class.03--------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class PlayerInChallenge:
-	def __init__(self, master, key, wins1v1, wins2v2):
+	def __init__(self, challenge, key, wins1v1, wins2v2):
 		self.key = key
-		self.master = master
+		self.challenge = challenge
 		self.wins1v1 = wins1v1
 		self.wins2v2 = wins2v2
 		self.wins = wins1v1 + wins2v2
-		self.history = self.master.chasys.PLAYERS[key]
-		self.history.challenges.append(master)
+		self.history = self.challenge.chasys.PLAYERS[key]
+		self.history.challenges.append(self.challenge)
 		self.rank = self.history.rank
 		
 	###--------------------------Public.Properties-----------------------###
@@ -327,15 +325,12 @@ class PlayerInChallenge:
 		
 	@cached_property
 	def last_challenge(self):
-		return self.history.challenges[-2]
+		previous_index = self.history.challenges.index(self.challenge)-1
+		return self.history.challenges[previous_index]
 	
 	@cached_property
 	def days_since_last_chall(self):	
-		if self.last_challenge is None:
-			return None # self.history.fecha_de_alta.date
-		else:
-			delta = self.master.date - self.last_challenge.date
-			return delta.days # /30
+		return (self.challenge.date - self.last_challenge.date).days if self.last_challenge else None
 		
 	def __repr__(self):
 		return f"|{self.history.key}|"
@@ -360,7 +355,7 @@ class ChallengeSystem:
 		
 		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
 		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
-		self.CHALLENGES = { index: Challenge(self, index, row) for index, row  in self.data.iterrows() }
+		self.CHALLENGES = { key: ChallengeEvent(self, key, row) for key, row  in self.data.iterrows() }
 		if write_log:
 			self.__write_chalog()
 		if write_csv:
@@ -438,28 +433,23 @@ class ChallengeSystem:
 	
 	@cached_property
 	def data(self):
-		cabeceras = ['chall','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date']
-		indice = 'chall'
+		cabeceras = ['key','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date']
+		indice = 'key'
 		if self.chacsv.exists() and self.chacsv.stat().st_size >0 :
 			data = pd.read_csv(
 				filepath_or_buffer = self.chacsv, 
 				sep = ";", 
-				# decimal = ",", 
 				encoding = "latin1",
 				index_col = indice,
 				dtype={'version': str}
 			)
-			# data.set_index(INDICE, inplace=True)
 		else:
 			data = pd.DataFrame(columns=cabeceras)
 			data.set_index(INDICE, inplace=True)
 			
 		data.sort_index(inplace=True, ascending=True)
-		# data.sort_values(by='chall', inplace=True)
-		# data.sort_index(inplace=True)
 		data = data.map(lambda x: x.strip() if isinstance(x, str) else x)
 		data['message'] = data['message'].fillna('')
-		# data['message'].fillna('', inplace=True)
 		return data
 			
 	
