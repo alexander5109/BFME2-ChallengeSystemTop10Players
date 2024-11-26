@@ -154,27 +154,18 @@ class ChallengeEvent:
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
-		
-		player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
-		player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
-		
-		self.winner = player1 if (player1.wins > player2.wins or not self.cha_type is ScoreMode.NORMAL_MODE) else player2
-		self.loser = player1 if (self.winner is player2) else player2
+		self.custom_msg = f"\n\n\tComment: {row['message']}" if pd.notna(row['message']) and row['message'] else ""
+		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
+		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 		
 		self.__asegurar_integridad_de_row()
-			
-		self.challenger = player1 if (player1.rank > player2.rank) else player2
-		self.defender = player1 if (self.challenger is player2) else player2
 		
 		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
-		self.custom_msg = f"\n\n\tComment: {row['message']}" if pd.notna(row['message']) and row['message'] else ""
 
-		if self.cha_type is ScoreMode.NO_SCORE_MODE:
-			self.__update_histories(issue_score=False)
-		elif self.cha_type is ScoreMode.KICK_ADD_MODE:
+		if self.cha_type is ScoreMode.KICK_ADD_MODE:
 			self.__add_p1_kick_p2()
-		elif self.cha_type is ScoreMode.NORMAL_MODE:
-			self.__update_histories(issue_score=True)	
+		else:
+			self.__update_histories()	
 			
 		self.top10 = self.__save_current_top_10()
 		self.disputed_rank = self.defender.rank
@@ -183,16 +174,6 @@ class ChallengeEvent:
 	def __asegurar_integridad_de_row(self):
 		if not self.cha_type is ScoreMode.NORMAL_MODE and self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.cha_type}.")
-		
-	def __add_p1_kick_p2(self):
-		if self.winner.rank > self.loser.rank:
-			for player in self.everyone_else_on_list:
-				if player.rank > self.winner.rank:
-					player.rank -= 1
-				if self.loser.rank < player.rank < 11:
-					player.rank -= 1
-			self.winner.history.rank = 10 
-			self.loser.history.rank += len(self.chasys.PLAYERS)
 			
 	def __save_current_top_10(self):
 		top_10_as_dict = {
@@ -204,9 +185,19 @@ class ChallengeEvent:
 		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
 			as_string += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		return as_string
+		
+	def __add_p1_kick_p2(self):
+		if self.challenger is self.winner:
+			for player in self.everyone_else_on_list:
+				if player.rank > self.winner.rank:
+					player.rank -= 1
+				if self.loser.rank < player.rank < 11:
+					player.rank -= 1
+			self.winner.history.rank = 10 
+			self.loser.history.rank += len(self.chasys.PLAYERS)
 	
 	
-	def __update_histories(self, issue_score):
+	def __update_histories(self):
 		if self.challenger is self.winner:
 			for player in self.everyone_else_on_list:
 				if player.rank > self.winner.history.rank:
@@ -215,7 +206,7 @@ class ChallengeEvent:
 					player.rank += 1
 			self.winner.history.rank = self.loser.history.rank
 			self.loser.history.rank += 1
-		if not issue_score:
+		if not self.cha_type is ScoreMode.NORMAL_MODE:
 			return;
 			
 		self.winner.history.add_challenge_record(self)
@@ -230,6 +221,23 @@ class ChallengeEvent:
 			# self.loser.key: self.loses
 		# }
 	
+	@cached_property
+	def winner(self):
+		return self.player1 if (self.player1.wins > self.player2.wins or self.cha_type is not ScoreMode.NORMAL_MODE) else self.player2
+
+	@cached_property
+	def loser(self):
+		return self.player1 if self.winner is self.player2 else self.player2
+
+	@cached_property
+	def challenger(self):
+		return self.player1 if self.player1.rank > self.player2.rank else self.player2
+
+	@cached_property
+	def defender(self):
+		return self.player1 if self.challenger is self.player2 else self.player2
+		
+		
 	@cached_property
 	def games_total(self):
 		return self.winner.wins + self.loser.wins
@@ -278,7 +286,7 @@ class ChallengeEvent:
 	@cached_property
 	def str_add_and_kick_or_none(self):
 		if self.cha_type is ScoreMode.KICK_ADD_MODE:
-			since_last_event = f'Since Challenge{self.defender.last_challenge.key if self.defender.last_challenge else None}'
+			since_last_event = f'Since Challenge{self.defender.previous_challenge.key}'
 			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
 		elif self.cha_type is ScoreMode.NO_SCORE_MODE:
 			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
@@ -352,13 +360,13 @@ class PlayerInChallenge:
 		return ordinal.get(self.rank, "from outside the list")
 		
 	@cached_property
-	def last_challenge(self):
+	def previous_challenge(self):
 		previous_index = self.history.challenges.index(self.challenge)-1
 		return self.history.challenges[previous_index]
 	
 	@cached_property
 	def days_since_last_chall(self):	
-		return (self.challenge.date - self.last_challenge.date).days if self.last_challenge else None
+		return (self.challenge.date - self.previous_challenge.date).days
 		
 	def __repr__(self):
 		return f"|{self.history.key}|"
