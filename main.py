@@ -251,54 +251,76 @@ class ChallengeEvent:
 	###--------------------------Public.dundermethod-----------------------###
 	def __repr__(self):
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
-
+		
 	def __str__(self):
-		def str_bo9_or_b4b5():
-			if not self.games2v2:
-				# return "Challenge Mode: Best of 9 in 1vs1."
-				return ""
-			else:
+		# Helper methods for clarity
+		def get_mode_description():
+			if self.games2v2:
 				return "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-			
-		def str_score1v1_or_none():
-			return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}" if self.games1v1 else ""
-			
-		def str_score2v2_or_none():
-			return f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}" if self.games2v2 else ""
-			
-		def str_add_and_kick_or_none():
+			return ""
+
+		def get_02_score_1v1():
+			if self.games1v1:
+				return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+			return ""
+
+		def get_03_score_2v2():
+			if self.games2v2:
+				return (
+					f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+					f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+				)
+			return ""
+
+		def get_04_add_and_kick_message():
 			if self.is_kick_add_mode:
-				since_last_event = f'Since Challenge{self.defender.previous_challenge.key}'
-				return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
-			elif self.is_no_score_mode:
-				return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
-			else:
-				return ""
-				
-		def str_challenge_or_none():
+				since_last_event = f'Since Challenge {self.defender.previous_challenge.key}'
+				return (
+					f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game "
+					f"or challenge in {self.defender.days_since_last_chall} days."
+					f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list."
+				)
+			if self.is_no_score_mode:
+				return f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
+			return ""
+
+		def get_01_challenge_message():
 			if not self.is_kick_add_mode:
-				return f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{str_bo9_or_b4b5()} "
-			else:
-				return ""
-			
-		def str_version_or_no_score():
+				return (
+					f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
+					f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
+					f"{get_mode_description()}"
+				)
+			return ""
+
+		def get_06_version_message():
 			if self.games_total:
-				return f"\n\nGames were played in {self.version}"
-			else:
-				return "\n\nNo wins or loses have been scored."
-				
-		def str_defended_or_took_over():
+				return f"Games were played in {self.version}"
+			return "No wins or losses have been scored."
+
+		def get_05_defense_or_takeover_message():
 			if self.is_kick_add_mode:
-				return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
-				
+				return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
+
 			flawless = "flawlessly " if self.loser.wins == 0 and not self.is_no_score_mode and not self.is_kick_add_mode else ""
 			if self.defender is self.winner:
 				return f"\n\n+ {self.defender.history.name} has {flawless}defended the {self.defender.rank_ordinal} spot!"
-			else:
-				return f"\n\n+ {self.challenger.history.name} has {flawless}took over the {self.defender.rank_ordinal} spot!" 
-				
-			
-		return f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n\n- Challenge № {self.key}\n- Update {self.dateString}{str_challenge_or_none()}\n{str_score1v1_or_none()}{str_score2v2_or_none()}{str_add_and_kick_or_none()}{str_defended_or_took_over()}{self.custom_msg}{str_version_or_no_score()}\n\nLet the challenges continue!\n\n{self.top10}```"
+			return f"\n\n+ {self.challenger.history.name} has {flawless}taken over the {self.defender.rank_ordinal} spot!"
+
+		# Assembling the message
+		return (
+			f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n"
+			f"\n- Challenge № {self.key}\n- Update {self.dateString}"
+			f"{get_01_challenge_message()}"
+			f"{get_02_score_1v1()}"
+			f"{get_03_score_2v2()}"
+			f"{get_04_add_and_kick_message()}"
+			f"{get_05_defense_or_takeover_message()}"
+			f"{self.custom_msg}"
+			f"\n\n{get_06_version_message()}"
+			f"\n\nLet the challenges continue!"
+			f"\n\n{self.top10}```"
+		)
 
 
 
