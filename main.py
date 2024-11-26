@@ -381,13 +381,14 @@ class PlayerInChallenge:
 #"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
-	def __init__(self, chacsv, chalog, player_data, write_log=False, write_csv=False):
+	def __init__(self, chacsv, chalog, status, player_data, write_log=False, write_csv=False):
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
 			raise Exception("No existe el archivo de los .log")
 		self.chacsv = chacsv
 		self.chalog = chalog
+		self.status = status
 		
 		
 		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
@@ -397,6 +398,7 @@ class ChallengeSystem:
 			self.__do_01_write_chalog()
 		if write_csv:
 			self.__do_02_write_csv(reverse=False)
+		self.__do_03_write_status()
 		
 	###--------------------------Public.Methods-----------------------###
 	def consult_01_challenge_log(self, reverse=False):
@@ -436,6 +438,14 @@ class ChallengeSystem:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
 
+	def __do_03_write_status(self):
+		sorted_players = sorted(self.PLAYERS.values(), key=lambda x: x.rank)
+		
+		super_string = "\n".join(str(player) for player in sorted_players)
+		# print(super_string)
+		with open(self.status, "w", encoding='utf-8') as file:
+			file.write(super_string)
+			print(f"* {self.status.name} was updated")
 
 	###------------------------------Statics-----------------------###
 	@staticmethod
@@ -482,6 +492,7 @@ if __name__ == "__main__":
 		player_data = json.load(open("players.json")),
 		chacsv=Path.cwd() / "challenges.csv",
 		chalog=Path.cwd() / "challenges.log",
+		status=Path.cwd() / "status.log",
 		write_log=True,
 		write_csv=False
 	)
