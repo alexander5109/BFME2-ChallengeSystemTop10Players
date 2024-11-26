@@ -15,7 +15,7 @@ class Player:
 		self.key = key
 		self.rank = rank
 		self.names = value["nicknames"]
-		self.discord_id = value["discord_id"]
+		# self.discord_id = value["discord_id"]
 
 		self.cha_wins = 0
 		self.cha_loses = 0
@@ -185,24 +185,26 @@ class Challenge:
 					player.rank += 1
 			self.winner.history.rank = self.loser.history.rank
 			self.loser.history.rank += 1
-		if issue_score:
-			self.winner.history.cha_wins += 1
-			self.loser.history.cha_loses += 1
-				
+		if not issue_score:
+			return;
+		
+		self.winner.history.cha_wins += 1
+		self.loser.history.cha_loses += 1
 			
-			self.winner.history.games_played_total += self.games_total
-			self.winner.history.games_played_1v1 += self.games1v1
-			self.winner.history.games_played_2v2 += self.games2v2
-			self.winner.history.wins_total += self.winner.wins
-			self.winner.history.wins1v1_total += self.winner.wins1v1
-			self.winner.history.wins2v2_total += self.winner.wins2v2
-			
-			self.loser.history.games_played_total += self.games_total
-			self.loser.history.games_played_1v1 += self.games1v1
-			self.loser.history.games_played_2v2 += self.games2v2
-			self.loser.history.wins_total += self.loser.wins
-			self.loser.history.wins1v1_total += self.loser.wins1v1
-			self.loser.history.wins2v2_total += self.loser.wins2v2
+		
+		self.winner.history.games_played_total += self.games_total
+		self.winner.history.games_played_1v1 += self.games1v1
+		self.winner.history.games_played_2v2 += self.games2v2
+		self.winner.history.wins_total += self.winner.wins
+		self.winner.history.wins1v1_total += self.winner.wins1v1
+		self.winner.history.wins2v2_total += self.winner.wins2v2
+		
+		self.loser.history.games_played_total += self.games_total
+		self.loser.history.games_played_1v1 += self.games1v1
+		self.loser.history.games_played_2v2 += self.games2v2
+		self.loser.history.wins_total += self.loser.wins
+		self.loser.history.wins1v1_total += self.loser.wins1v1
+		self.loser.history.wins2v2_total += self.loser.wins2v2
 
 
 	###--------------------------Public.Properties-----------------------###

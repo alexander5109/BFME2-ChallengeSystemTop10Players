@@ -13,179 +13,179 @@
     "active": {
         "ASTRO": {
             "nicknames": ["ASTRO"],
-            "discord_id": null
+            "discord_ids": []
         },
         "JASKIER": {
             "nicknames": ["Jaskier"],
-            "discord_id": null
+            "discord_ids": []
         },
         "CBATS": {
             "nicknames": ["CaveBats"],
-            "discord_id": null
+            "discord_ids": []
         },
         "URBY": {
             "nicknames": ["Urby"],
-            "discord_id": "@urby0572"
+            "discord_ids": ["@urby0572"]
         },
         "SHINODA": {
             "nicknames": ["Shinoda"],
-            "discord_id": "@shinoda7772"
+            "discord_ids": ["@shinoda7772"]
         },
         "RAKI": {
             "nicknames": ["Raknarok"],
-            "discord_id": "@shiraori1563"
+            "discord_ids": ["@shiraori1563"]
         },
         "YUSUF": {
             "nicknames": ["Yu$ufNi$ic"],
-            "discord_id": "@yusufnisic"
+            "discord_ids": ["@yusufnisic"]
         },
         "GANNICUS": {
             "nicknames": ["Gannicus", "Azog"],
-            "discord_id": "@gannicus1087"
+            "discord_ids": ["@gannicus1087"]
         },
         "THORIN": {
             "nicknames": ["GranThorino", "thuren k-shild"],
-            "discord_id": "@granthorino"
+            "discord_ids": ["@granthorino"]
         },
         "RAINY": {
             "nicknames": ["Rainy"],
-            "discord_id": "@ivanpetryakov"
+            "discord_ids": ["@ivanpetryakov"]
         },
         "HITMACHINE": {
             "nicknames": ["HitMachine"],
-            "discord_id": "@lightitup"
+            "discord_ids": ["@lightitup"]
         },
         "YODA": {
             "nicknames": ["Yoda", "PIO"],
-            "discord_id": null
+            "discord_ids": []
         },
         "NINKA": {
             "nicknames": ["Recon|NinkaZy"],
-            "discord_id": "@ninkazy"
+            "discord_ids": ["@ninkazy"]
         },
         "KURDISH": {
             "nicknames": ["KurdishBeg"],
-            "discord_id": "@MirBeg#4983"
+            "discord_ids": ["@MirBeg#4983"]
         },
         "NATHAN": {
             "nicknames": ["Aow_NathanPearson"],
-            "discord_id": null
+            "discord_ids": []
         },
         "DOBBY": {
             "nicknames": ["Dizz|Raptor", "Dobby"],
-            "discord_id": null
+            "discord_ids": []
         },
         "GOSPURE": {
             "nicknames": ["GosPurePwneage", "Bilbo"],
-            "discord_id": "@Bilbo#6850"
+            "discord_ids": ["@Bilbo#6850"]
         },
         "MEWTWO": {
             "nicknames": ["Mewtwo"],
-            "discord_id": null
+            "discord_ids": []
         },
         "PIKACHU": {
             "nicknames": ["PiKaChu"],
-            "discord_id": "@PikacHu#7034"
+            "discord_ids": ["@PikacHu#7034"]
         },
         "MUSTAFA": {
             "nicknames": ["King.Mustafa"],
-            "discord_id": "@kingmustafa"
+            "discord_ids": ["@kingmustafa"]
         },
         "JONES": {
             "nicknames": ["Callan", "JonesBFME2"],
-            "discord_id": null
+            "discord_ids": []
         },
         "SAURON": {
             "nicknames": ["S@uron"],
-            "discord_id": "@sauron6137"
+            "discord_ids": ["@sauron6137"]
         },
         "JEDGAR": {
             "nicknames": ["J`Edgard"],
-            "discord_id": null
+            "discord_ids": []
         },
         "DARYL": {
             "nicknames": ["Daryl"],
-            "discord_id": "@daryl123"
+            "discord_ids": ["@daryl123"]
         },
         "TEMPT": {
             "nicknames": ["Temptation", "Lamma"],
-            "discord_id": "@temptito"
+            "discord_ids": ["@temptito"]
         },
         "VITO": {
             "nicknames": ["Vito"],
-            "discord_id": "@s_vito"
+            "discord_ids": ["@s_vito"]
         },
         "OTTO": {
             "nicknames": ["1.6 ArCh4Ng3L"],
-            "discord_id": "@_arch4ng3l_"
+            "discord_ids": ["@_arch4ng3l_"]
         },
         "ECTH": {
             "nicknames": ["Eol Ecthelion"],
-            "discord_id": "@ecthelionbfme2"
+            "discord_ids": ["@ecthelionbfme2"]
         },
         "GLUTE": {
             "nicknames": ["THE_GLUTE_MASTER"],
-            "discord_id": null
+            "discord_ids": []
         },
         "GRENDAL": {
             "nicknames": ["TaR|Gr3ndal"],
-            "discord_id": "@no.ob007"
+            "discord_ids": ["@no.ob007"]
         },
         "MISHA": {
             "nicknames": ["Vodishcka", "Cicus|Word"],
-            "discord_id": "@misha7263"
+            "discord_ids": ["@misha7263"]
         },
         "ANDY": {
             "nicknames": ["AndyBrandy`"],
-            "discord_id": "@pina123456789"
+            "discord_ids": ["@pina123456789"]
         },
         "LOLO": {
             "nicknames": ["Lotlorien", "Darkness", "Lothlorien"],
-            "discord_id": "@lothlorien2149"
+            "discord_ids": ["@lothlorien2149"]
         },
         "ENUMA": {
             "nicknames": ["ENUMAra"],
-            "discord_id": "@enumara"
+            "discord_ids": ["@enumara"]
         },
         "AHWE": {
             "nicknames": ["Ahwehawe"],
-            "discord_id": "@ahwehawe"
+            "discord_ids": ["@ahwehawe"]
         },
         "SCARECROW": {
             "nicknames": ["Scare^Cr0w"],
-            "discord_id": null
+            "discord_ids": []
         },
         "FREEDOOM": {
             "nicknames": ["FreeDooM"],
-            "discord_id": "@FreeDooM#4035"
+            "discord_ids": ["@FreeDooM#4035"]
         },
         "ZORBA": {
             "nicknames": ["Imperious", "Zorbalator"],
-            "discord_id": "@zorbalator"
+            "discord_ids": ["@zorbalator"]
         },
         "MAKA": {
             "nicknames": ["Maka`"],
-            "discord_id": null
+            "discord_ids": []
         },
         "LAU": {
             "nicknames": ["Farmer Lau"],
-            "discord_id": "@farmerlau"
+            "discord_ids": ["@farmerlau"]
         },
         "IMPERIALIST": {
             "nicknames": ["Imperialist"],
-            "discord_id": "@imper_ur_her0"
+            "discord_ids": ["@imper_ur_her0"]
         },
         "HALET": {
             "nicknames": ["RECON|Halet"],
-            "discord_id": "@Getget#8380"
+            "discord_ids": ["@Getget#8380"]
         },
         "CASPER": {
             "nicknames": ["Casper"],
-            "discord_id": "@Casper#4924"
+            "discord_ids": ["@Casper#4924"]
         },
         "LUXUS": {
             "nicknames": ["AoW|LuXuS"],
-            "discord_id": "@aowluxus"
+            "discord_ids": ["@aowluxus"]
         }
     }, 
     "legacy": {
