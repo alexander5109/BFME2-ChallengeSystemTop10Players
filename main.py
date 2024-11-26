@@ -170,30 +170,21 @@ class ChallengeEvent:
 		
 	
 	def __02_compute_logic(self):
-		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
-
-		if self.cha_type is ScoreMode.KICK_ADD_MODE:
-			if self.challenger is self.winner:
-				for player in self.everyone_else_on_list:
-					if player.rank > self.winner.rank:
-						player.rank -= 1
+		if self.challenger is self.winner:
+			other_players = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
+			for player in other_players:
+				if player.rank > self.winner.rank:
+					player.rank -= 1
+				if self.cha_type is ScoreMode.KICK_ADD_MODE:
 					if self.loser.rank < player.rank < 11:
 						player.rank -= 1
-				self.winner.history.rank = 10 
-				self.loser.history.rank += len(self.chasys.PLAYERS)
-		else:
-			if self.challenger is self.winner:
-				for player in self.everyone_else_on_list:
-					if player.rank > self.winner.rank:
-						player.rank -= 1
+				else:
 					if player.rank > self.loser.rank:
 						player.rank += 1
-				self.winner.history.rank = self.loser.rank
-				self.loser.history.rank += 1 
-				
-			if not self.cha_type is ScoreMode.NORMAL_MODE:
-				return;
-				
+			self.challenger.history.rank = 10 if self.cha_type is ScoreMode.KICK_ADD_MODE else self.defender.rank
+			self.defender.history.rank += len(self.chasys.PLAYERS) if self.cha_type is ScoreMode.KICK_ADD_MODE else 1 
+			
+		if self.cha_type is ScoreMode.NORMAL_MODE:
 			self.winner.history.add_challenge_record(self)
 			self.loser.history.add_challenge_record(self)
 			
