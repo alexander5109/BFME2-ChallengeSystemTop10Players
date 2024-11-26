@@ -170,25 +170,26 @@ class ChallengeEvent:
 		
 	
 	def __02_compute_logic(self):
-		if self.challenger is self.winner:
-			other_players = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
-			for player in other_players:
-				if player.rank > self.winner.rank:
-					player.rank -= 1
-				if self.cha_type is ScoreMode.KICK_ADD_MODE:
-					if self.loser.rank < player.rank < 11:
-						player.rank -= 1
-				else:
-					if player.rank > self.loser.rank:
-						player.rank += 1
-			self.challenger.history.rank = 10 if self.cha_type is ScoreMode.KICK_ADD_MODE else self.defender.rank
-			self.defender.history.rank += len(self.chasys.PLAYERS) if self.cha_type is ScoreMode.KICK_ADD_MODE else 1 
-			
 		if self.cha_type is ScoreMode.NORMAL_MODE:
 			self.winner.history.add_challenge_record(self)
 			self.loser.history.add_challenge_record(self)
 			
+		if self.challenger is not self.winner:
+			return
 			
+		self.challenger.history.rank = 10 if self.cha_type is ScoreMode.KICK_ADD_MODE else self.defender.rank
+		self.defender.history.rank += len(self.chasys.PLAYERS) if self.cha_type is ScoreMode.KICK_ADD_MODE else 1 
+		
+		for player in self.chasys.PLAYERS.values():
+			if player.key in {self.winner.key, self.loser.key}:
+				continue
+			elif player.rank > self.winner.rank:
+				player.rank -= 1
+				
+			if self.cha_type is ScoreMode.KICK_ADD_MODE and 11 > player.rank > self.loser.rank:
+				player.rank -= 1
+			elif player.rank > self.loser.rank:
+				player.rank += 1
 			
 			
 	def __03_freeze_current_top_10_string(self):
