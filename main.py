@@ -369,6 +369,7 @@ class PlayerInChallenge:
 	def days_since_last_chall(self):	
 		return (self.challenge.date - self.previous_challenge.date).days
 		
+	###--------------------------Public.dundermethod-----------------------###
 	def __repr__(self):
 		return f"|{self.history.key}|"
 
@@ -439,10 +440,7 @@ class ChallengeSystem:
 			print(f"* {self.chalog.name} was updated")
 
 	def __do_03_write_status(self):
-		sorted_players = sorted(self.PLAYERS.values(), key=lambda x: x.rank)
-		
-		super_string = "\n".join(str(player) for player in sorted_players)
-		# print(super_string)
+		super_string = "\n".join(str(player) for player in sorted(self.PLAYERS.values(), key=lambda x: x.key))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
