@@ -141,9 +141,10 @@ class Challenge:
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
-		self.dont_score_mode = self.version == "NO_SCORE"
+		self.is_dont_score_mode = self.version == "NO_SCORE"
 		self.is_add_and_kick = self.version == "ADD_AND_KICK"
-		if not self.dont_score_mode and not self.is_add_and_kick:
+		self.is_normal = not self.is_dont_score_mode and not self.is_add_and_kick
+		if not self.is_dont_score_mode and not self.is_add_and_kick:
 			player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 			player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 			self.winner = player2 if player2.wins > player1.wins else player1
@@ -162,13 +163,15 @@ class Challenge:
 		self.defender = player1 if self.challenger == player2 else player2
 		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
 		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
-		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.dont_score_mode and not self.is_add_and_kick else ""
+		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.is_dont_score_mode and not self.is_add_and_kick else ""
 		
-		if self.dont_score_mode:
-			self.__update_histories(issue_score=False)
-		elif self.str_add_and_kick_or_none:
+		if self.is_add_and_kick:
 			self.__add_p1_kick_p2()
-		elif self.games_total:
+			
+		elif self.is_dont_score_mode:
+			self.__update_histories(issue_score=False)
+			
+		elif self.is_normal:
 			self.__update_histories(issue_score=True)	
 			
 		self.top10 = self.__save_current_top_10()
@@ -176,7 +179,6 @@ class Challenge:
 		
 	###--------------------------Private.Methods-----------------------###
 	def __add_p1_kick_p2(self):
-		last_spot = len(self.chasys.PLAYERS)
 		if self.winner.rank > self.loser.rank:
 			for player in self.everyone_else_on_list:
 				if player.rank > self.winner.rank:
@@ -184,7 +186,7 @@ class Challenge:
 				if self.loser.rank < player.rank < 11:
 					player.rank -= 1
 			self.winner.history.rank = 10 
-			self.loser.history.rank += last_spot # 
+			self.loser.history.rank += len(self.chasys.PLAYERS)
 			
 	def __save_current_top_10(self):
 		top_10_as_dict = {
@@ -199,7 +201,7 @@ class Challenge:
 	
 	
 	def __update_histories(self, issue_score):
-		if self.winner.history.rank > self.loser.history.rank:
+		if self.challenger is self.winner:
 			for player in self.everyone_else_on_list:
 				if player.rank > self.winner.history.rank:
 					player.rank -= 1
@@ -224,7 +226,7 @@ class Challenge:
 	
 	@cached_property
 	def is_cha(self):
-		return not self.str_add_and_kick_or_none and not self.dont_score_mode
+		return not self.str_add_and_kick_or_none and not self.is_dont_score_mode
 		
 	@cached_property
 	def str_bo9_or_b4b5(self):
@@ -254,7 +256,7 @@ class Challenge:
 		if self.is_add_and_kick:
 			since_last_event = f'Since Challenge{self.defender.last_challenge.index}' #if self.defender.last_challenge else f'Since added in the top10 list in the ChallengeEvent{self.defender.fecha_de_alta}'
 			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
-		elif self.dont_score_mode:
+		elif self.is_dont_score_mode:
 			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
 		else:
 			return ""
