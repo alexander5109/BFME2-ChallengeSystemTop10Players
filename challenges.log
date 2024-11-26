@@ -148,7 +148,7 @@ Let the challenges continue!
 	1   . Gannicus             8-3
 ```
 ------------------------------------
-Challenge306_JASKIER vs PIKACHU, 0-0, NO_SCORE
+Challenge306_JASKIER vs PIKACHU, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 306
@@ -440,7 +440,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          22-14
 ```
 ------------------------------------
-Challenge296_YUSUF vs GANNICUS, 0-0, NO_SCORE
+Challenge296_YUSUF vs GANNICUS, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 296
@@ -587,7 +587,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          22-14
 ```
 ------------------------------------
-Challenge291_OTTO vs YUSUF, 0-0, NO_SCORE
+Challenge291_OTTO vs YUSUF, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 291
@@ -1034,7 +1034,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          21-14
 ```
 ------------------------------------
-Challenge276_RAKI vs SAURON, 0-0, ADD_AND_KICK
+Challenge276_RAKI vs SAURON, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 276
@@ -1095,7 +1095,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          21-14
 ```
 ------------------------------------
-Challenge274_AHWE vs ECTH, 0-0, NO_SCORE
+Challenge274_AHWE vs ECTH, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 274
@@ -1273,7 +1273,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        28-49
 ```
 ------------------------------------
-Challenge268_AHWE vs KURDISH, 0-0, NO_SCORE
+Challenge268_AHWE vs KURDISH, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 268
@@ -1304,7 +1304,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        28-49
 ```
 ------------------------------------
-Challenge267_LOLO vs KURDISH, 0-0, NO_SCORE
+Challenge267_LOLO vs KURDISH, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 267
@@ -1335,7 +1335,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        28-49
 ```
 ------------------------------------
-Challenge266_AHWE vs MISHA, 0-0, ADD_AND_KICK
+Challenge266_AHWE vs MISHA, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 266
@@ -2774,7 +2774,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          14-11
 ```
 ------------------------------------
-Challenge217_GRENDAL vs NINKA, 0-0, ADD_AND_KICK
+Challenge217_GRENDAL vs NINKA, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 217
@@ -2804,7 +2804,7 @@ Let the challenges continue!
 	1   . AndyBrandy`          14-11
 ```
 ------------------------------------
-Challenge216_RAINY vs THORIN, 0-0, ADD_AND_KICK
+Challenge216_RAINY vs THORIN, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 216
@@ -3503,7 +3503,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        15-15
 ```
 ------------------------------------
-Challenge192_NINKA vs DOBBY, 0-0, ADD_AND_KICK
+Challenge192_NINKA vs DOBBY, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 192
@@ -3533,7 +3533,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        15-15
 ```
 ------------------------------------
-Challenge191_THORIN vs LUXUS, 0-0, ADD_AND_KICK
+Challenge191_THORIN vs LUXUS, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 191
@@ -3911,7 +3911,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge178_ECTH vs DOBBY, 0-0, NO_SCORE
+Challenge178_ECTH vs DOBBY, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 178
@@ -3940,7 +3940,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge177_ECTH vs SAURON, 0-0, NO_SCORE
+Challenge177_ECTH vs SAURON, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 177
@@ -4027,7 +4027,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge174_KURDISH vs NATHAN, 0-0, ADD_AND_KICK
+Challenge174_KURDISH vs NATHAN, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 174
@@ -4086,7 +4086,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge172_IMPERIALIST vs ENUMA, 0-0, ADD_AND_KICK
+Challenge172_IMPERIALIST vs ENUMA, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 172
@@ -4174,7 +4174,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge169_ECTH vs NATHAN, 0-0, NO_SCORE
+Challenge169_ECTH vs NATHAN, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 169
@@ -4203,7 +4203,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        14-15
 ```
 ------------------------------------
-Challenge168_ECTH vs YODA, 0-0, NO_SCORE
+Challenge168_ECTH vs YODA, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 168
@@ -4406,7 +4406,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        11-15
 ```
 ------------------------------------
-Challenge161_IMPERIALIST vs ECTH, 0-0, ADD_AND_KICK
+Challenge161_IMPERIALIST vs ECTH, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 161
@@ -4438,7 +4438,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        10-15
 ```
 ------------------------------------
-Challenge160_DOBBY vs SAURON, 0-0, NO_SCORE
+Challenge160_DOBBY vs SAURON, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 160
@@ -4467,7 +4467,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        10-15
 ```
 ------------------------------------
-Challenge159_ENUMA vs YODA, 0-0, NO_SCORE
+Challenge159_ENUMA vs YODA, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 159
@@ -4525,7 +4525,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        10-15
 ```
 ------------------------------------
-Challenge157_DOBBY vs HALET, 0-0, NO_SCORE
+Challenge157_DOBBY vs HALET, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 157
@@ -4583,7 +4583,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        26-18
 ```
 ------------------------------------
-Challenge155_ANDY vs LUXUS, 0-0, NO_SCORE
+Challenge155_ANDY vs LUXUS, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 155
@@ -4612,7 +4612,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        25-18
 ```
 ------------------------------------
-Challenge154_OTTO vs LUXUS, 0-0, NO_SCORE
+Challenge154_OTTO vs LUXUS, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 154
@@ -4641,7 +4641,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        25-18
 ```
 ------------------------------------
-Challenge153_ECTH vs LUXUS, 0-0, NO_SCORE
+Challenge153_ECTH vs LUXUS, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 153
@@ -4815,7 +4815,7 @@ Let the challenges continue!
 	1   . AoW|LuXuS            10-4
 ```
 ------------------------------------
-Challenge147_YODA vs HALET, 0-0, NO_SCORE
+Challenge147_YODA vs HALET, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 147
@@ -5105,7 +5105,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        23-14
 ```
 ------------------------------------
-Challenge137_LOLO vs DOBBY, 0-0, ADD_AND_KICK
+Challenge137_LOLO vs DOBBY, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 137
@@ -5195,7 +5195,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        23-14
 ```
 ------------------------------------
-Challenge134_LOLO vs GOSPURE, 0-0, ADD_AND_KICK
+Challenge134_LOLO vs GOSPURE, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 134
@@ -5312,7 +5312,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        23-14
 ```
 ------------------------------------
-Challenge130_ECTH vs LUXUS, 0-0, NO_SCORE
+Challenge130_ECTH vs LUXUS, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 130
@@ -5370,7 +5370,7 @@ Let the challenges continue!
 	1   . AoW|LuXuS            9-4
 ```
 ------------------------------------
-Challenge128_LUXUS vs ECTH, 0-0, NO_SCORE
+Challenge128_LUXUS vs ECTH, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 128
@@ -5428,7 +5428,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        22-14
 ```
 ------------------------------------
-Challenge126_ECTH vs OTTO, 0-0, NO_SCORE
+Challenge126_ECTH vs OTTO, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 126
@@ -5515,7 +5515,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        7-13
 ```
 ------------------------------------
-Challenge123_OTTO vs DOBBY, 0-0, NO_SCORE
+Challenge123_OTTO vs DOBBY, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 123
@@ -5544,7 +5544,7 @@ Let the challenges continue!
 	1   . 1.6 ArCh4Ng3L        7-13
 ```
 ------------------------------------
-Challenge122_NINKA vs PIKACHU, 0-0, NO_SCORE
+Challenge122_NINKA vs PIKACHU, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 122
@@ -5573,7 +5573,7 @@ Let the challenges continue!
 	1   . Dizz|Raptor          3-6
 ```
 ------------------------------------
-Challenge121_DOBBY vs ECTH, 0-0, NO_SCORE
+Challenge121_DOBBY vs ECTH, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 121
@@ -5660,7 +5660,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        22-14
 ```
 ------------------------------------
-Challenge118_DOBBY vs SAURON, 0-0, NO_SCORE
+Challenge118_DOBBY vs SAURON, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 118
@@ -5718,7 +5718,7 @@ Let the challenges continue!
 	1   . S@uron               12-1
 ```
 ------------------------------------
-Challenge116_DOBBY vs GOSPURE, 0-0, NO_SCORE
+Challenge116_DOBBY vs GOSPURE, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 116
@@ -5747,7 +5747,7 @@ Let the challenges continue!
 	1   . S@uron               12-1
 ```
 ------------------------------------
-Challenge115_DOBBY vs MISHA, 0-0, NO_SCORE
+Challenge115_DOBBY vs MISHA, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 115
@@ -5805,7 +5805,7 @@ Let the challenges continue!
 	1   . S@uron               12-1
 ```
 ------------------------------------
-Challenge113_MUSTAFA vs ANDY, 0-0, ADD_AND_KICK
+Challenge113_MUSTAFA vs ANDY, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 113
@@ -5895,7 +5895,7 @@ Let the challenges continue!
 	1   . S@uron               12-1
 ```
 ------------------------------------
-Challenge110_PIKACHU vs AHWE, 0-0, ADD_AND_KICK
+Challenge110_PIKACHU vs AHWE, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 110
@@ -5983,7 +5983,7 @@ Let the challenges continue!
 	1   . Eol Ecthelion        19-13
 ```
 ------------------------------------
-Challenge107_OTTO vs GOSPURE, 0-0, NO_SCORE
+Challenge107_OTTO vs GOSPURE, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 107
@@ -6360,7 +6360,7 @@ Let the challenges continue!
 	1   . AoW|LuXuS            9-3
 ```
 ------------------------------------
-Challenge94_GANNICUS vs TEMPT, 0-0, ADD_AND_KICK
+Challenge94_GANNICUS vs TEMPT, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 94
@@ -6392,7 +6392,7 @@ Let the challenges continue!
 	1   . AoW|LuXuS            9-3
 ```
 ------------------------------------
-Challenge93_HALET vs TEMPT, 0-0, NO_SCORE
+Challenge93_HALET vs TEMPT, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 93
@@ -6421,7 +6421,7 @@ Let the challenges continue!
 	1   . AoW|LuXuS            9-3
 ```
 ------------------------------------
-Challenge92_MISHA vs OTTO, 0-0, NO_SCORE
+Challenge92_MISHA vs OTTO, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 92
@@ -6653,7 +6653,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge84_GANNICUS vs DOBBY, 0-0, ADD_AND_KICK
+Challenge84_GANNICUS vs DOBBY, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 84
@@ -6685,7 +6685,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge83_GOSPURE vs DOBBY, 0-0, NO_SCORE
+Challenge83_GOSPURE vs DOBBY, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 83
@@ -6890,7 +6890,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge76_TEMPT vs LAU, 0-0, ADD_AND_KICK
+Challenge76_TEMPT vs LAU, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 76
@@ -6922,7 +6922,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge75_AHWE vs MUSTAFA, 0-0, ADD_AND_KICK
+Challenge75_AHWE vs MUSTAFA, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 75
@@ -6952,7 +6952,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge74_ANDY vs ZORBA, 0-0, ADD_AND_KICK
+Challenge74_ANDY vs ZORBA, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 74
@@ -6984,7 +6984,7 @@ Let the challenges continue!
 	1   . S@uron               11-0
 ```
 ------------------------------------
-Challenge73_MISHA vs PIKACHU, 0-0, ADD_AND_KICK
+Challenge73_MISHA vs PIKACHU, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 73
@@ -7362,7 +7362,7 @@ Let the challenges continue!
 	1   . S@uron               10-0
 ```
 ------------------------------------
-Challenge60_GOSPURE vs TEMPT, 0-0, NO_SCORE
+Challenge60_GOSPURE vs TEMPT, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 60
@@ -7536,7 +7536,7 @@ Let the challenges continue!
 	1   . S@uron               10-0
 ```
 ------------------------------------
-Challenge54_DOBBY vs TEMPT, 0-0, NO_SCORE
+Challenge54_DOBBY vs TEMPT, 0-0, NO_SCORE_MODE
 ```diff
 
 - Challenge № 54
@@ -7565,7 +7565,7 @@ Let the challenges continue!
 	1   . S@uron               9-0
 ```
 ------------------------------------
-Challenge53_DOBBY vs AHWE, 0-0, ADD_AND_KICK
+Challenge53_DOBBY vs AHWE, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 53
@@ -7597,7 +7597,7 @@ Let the challenges continue!
 	1   . S@uron               9-0
 ```
 ------------------------------------
-Challenge52_LUXUS vs HITMACHINE, 0-0, ADD_AND_KICK
+Challenge52_LUXUS vs HITMACHINE, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 52
@@ -7801,7 +7801,7 @@ Let the challenges continue!
 	1   . S@uron               7-0
 ```
 ------------------------------------
-Challenge45_HITMACHINE vs IMPERIALIST, 0-0, ADD_AND_KICK
+Challenge45_HITMACHINE vs IMPERIALIST, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 45
@@ -8417,7 +8417,7 @@ Let the challenges continue!
 	1   . S@uron               5-0
 ```
 ------------------------------------
-Challenge25_DARYL vs GLUTE, 0-0, ADD_AND_KICK
+Challenge25_DARYL vs GLUTE, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 25
@@ -8606,7 +8606,7 @@ Let the challenges continue!
 	1   . S@uron               5-0
 ```
 ------------------------------------
-Challenge19_DARYL vs TEMPT, 0-0, ADD_AND_KICK
+Challenge19_DARYL vs TEMPT, 0-0, KICK_ADD_MODE
 ```diff
 
 - Challenge № 19

@@ -6,7 +6,20 @@ import json
 import py7zr
 from functools import cached_property
 from bidict import bidict
+from enum import Enum
 
+#-------------------------------------------------------------------------------------------------------------#
+#"""-------------------------------------------Player.Class.01---------------------------------------------"""#
+#-------------------------------------------------------------------------------------------------------------#
+class ScoreMode(Enum):
+    NO_SCORE_MODE = 1
+    KICK_ADD_MODE = 2
+    NORMAL_MODE = 3
+    
+    
+    
+    
+    
 #-------------------------------------------------------------------------------------------------------------#
 #"""-------------------------------------------Player.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
@@ -141,41 +154,37 @@ class ChallengeEvent:
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
-		self.is_dont_score_mode = self.version == "NO_SCORE"
-		self.is_add_and_kick = self.version == "ADD_AND_KICK"
-		self.is_normal = not self.is_dont_score_mode and not self.is_add_and_kick
-		if self.is_normal:
-			player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
-			player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
-			self.winner = player2 if player2.wins > player1.wins else player1
-			self.loser = player1 if self.winner == player2 else player2
-		else:
-			player1 = PlayerInChallenge(self, row["p1"], 0, 0)
-			player2 = PlayerInChallenge(self, row["p2"], 0, 0)
-			self.winner = player1 
-			self.loser = player2 
-		self.games_total = self.winner.wins + self.loser.wins
-		self.games1v1 = self.winner.wins1v1 + self.loser.wins1v1
-		self.games2v2 = self.winner.wins2v2 + self.loser.wins2v2
 		
+		player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
+		player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
+		
+		self.winner = player1 if (player1.wins > player2.wins or not self.cha_type is ScoreMode.NORMAL_MODE) else player2
+		self.loser = player1 if (self.winner is player2) else player2
+		
+		self.__asegurar_integridad_de_row()
 			
-		self.challenger = player1 if player1.rank > player2.rank else player2
-		self.defender = player1 if self.challenger == player2 else player2
+		self.challenger = player1 if (player1.rank > player2.rank) else player2
+		self.defender = player1 if (self.challenger is player2) else player2
+		
 		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
 		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
-		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.is_dont_score_mode and not self.is_add_and_kick else ""
+		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.cha_type is ScoreMode.NO_SCORE_MODE and not self.cha_type is ScoreMode.KICK_ADD_MODE else ""
 		
-		if self.is_dont_score_mode:
+		if self.cha_type is ScoreMode.NO_SCORE_MODE:
 			self.__update_histories(issue_score=False)
-		elif self.is_add_and_kick:
+		elif self.cha_type is ScoreMode.KICK_ADD_MODE:
 			self.__add_p1_kick_p2()
-		elif self.games_total:
+		elif self.cha_type is ScoreMode.NORMAL_MODE:
 			self.__update_histories(issue_score=True)	
 			
 		self.top10 = self.__save_current_top_10()
 		self.disputed_rank = self.defender.rank
 		
 	###--------------------------Private.Methods-----------------------###
+	def __asegurar_integridad_de_row(self):
+		if not self.cha_type is ScoreMode.NORMAL_MODE and self.games_total:
+			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.cha_type}.")
+		
 	def __add_p1_kick_p2(self):
 		if self.winner.rank > self.loser.rank:
 			for player in self.everyone_else_on_list:
@@ -223,9 +232,27 @@ class ChallengeEvent:
 		# }
 	
 	@cached_property
-	def is_cha(self):
-		return not self.str_add_and_kick_or_none and not self.is_dont_score_mode
+	def games_total(self):
+		return self.winner.wins + self.loser.wins
 		
+	@cached_property
+	def games1v1(self):
+		return self.winner.wins1v1 + self.loser.wins1v1
+		
+	@cached_property
+	def games2v2(self):
+		return self.winner.wins2v2 + self.loser.wins2v2
+		
+	@cached_property
+	def cha_type(self):
+		if self.version == "NO_SCORE_MODE":
+			return ScoreMode.NO_SCORE_MODE
+		elif self.version == "KICK_ADD_MODE":
+			return ScoreMode.KICK_ADD_MODE
+		else:
+			return ScoreMode.NORMAL_MODE
+			
+			
 	@cached_property
 	def str_bo9_or_b4b5(self):
 		if not self.games2v2:
@@ -236,7 +263,7 @@ class ChallengeEvent:
 		
 	@cached_property
 	def str_challenge_or_none(self):
-		if not self.is_add_and_kick: #self.is_cha:
+		if not self.cha_type is ScoreMode.KICK_ADD_MODE:
 			return f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged {self.defender.history.name} ({self.defender.rank_ordinal}) for his spot.{self.str_bo9_or_b4b5} "
 		else:
 			return ""
@@ -251,17 +278,17 @@ class ChallengeEvent:
 		
 	@cached_property
 	def str_add_and_kick_or_none(self):
-		if self.is_add_and_kick:
+		if self.cha_type is ScoreMode.KICK_ADD_MODE:
 			since_last_event = f'Since Challenge{self.defender.last_challenge.key if self.defender.last_challenge else None}'
 			return f"{f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."}{f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list." }"
-		elif self.is_dont_score_mode:
+		elif self.cha_type is ScoreMode.NO_SCORE_MODE:
 			return f"\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't bothered to arrange a play-date to defend his spot."
 		else:
 			return ""
 		
 	@cached_property
 	def str_defended_or_took_over(self):
-		if self.is_add_and_kick:
+		if self.cha_type is ScoreMode.KICK_ADD_MODE:
 			return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
 		if self.defender is self.winner:
 			return f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
