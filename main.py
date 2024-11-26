@@ -167,9 +167,8 @@ class ChallengeEvent:
 		self.defender = player1 if (self.challenger is player2) else player2
 		
 		self.everyone_else_on_list = {player for player in self.chasys.PLAYERS.values() if player.key not in {self.winner.key, self.loser.key}}
-		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
-		self.flawless = "flawlessly " if self.loser.wins == 0 and not self.cha_type is ScoreMode.NO_SCORE_MODE and not self.cha_type is ScoreMode.KICK_ADD_MODE else ""
-		
+		self.custom_msg = f"\n\n\tComment: {row['message']}" if pd.notna(row['message']) and row['message'] else ""
+
 		if self.cha_type is ScoreMode.NO_SCORE_MODE:
 			self.__update_histories(issue_score=False)
 		elif self.cha_type is ScoreMode.KICK_ADD_MODE:
@@ -290,10 +289,12 @@ class ChallengeEvent:
 	def str_defended_or_took_over(self):
 		if self.cha_type is ScoreMode.KICK_ADD_MODE:
 			return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, begining on the 10th spot."
+			
+		flawless = "flawlessly " if self.loser.wins == 0 and not self.cha_type is ScoreMode.NO_SCORE_MODE and not self.cha_type is ScoreMode.KICK_ADD_MODE else ""
 		if self.defender is self.winner:
-			return f"\n\n+ {self.defender.history.name} has {self.flawless}defended the {self.defender.rank_ordinal} spot!"
+			return f"\n\n+ {self.defender.history.name} has {flawless}defended the {self.defender.rank_ordinal} spot!"
 		else:
-			return f"\n\n+ {self.challenger.history.name} has {self.flawless}took over the {self.defender.rank_ordinal} spot!" 
+			return f"\n\n+ {self.challenger.history.name} has {flawless}took over the {self.defender.rank_ordinal} spot!" 
 		
 	@cached_property
 	def str_version_or_no_score(self):
@@ -460,7 +461,6 @@ class ChallengeSystem:
 			data = pd.DataFrame(columns=['key','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date'])
 		data.set_index('key', inplace=True)
 		data.sort_index(inplace=True, ascending=True)
-		data['message'] = data['message'].fillna('')
 		return data
 			
 	
