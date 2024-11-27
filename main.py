@@ -32,7 +32,7 @@ class Player:
 		
 		
 	###--------------------------Public.Methods-----------------------###
-	def update_rank(self, challenge):
+	def set_rank(self, challenge):
 		if self.key == challenge.challenger.key:
 			self.rank = 10 if challenge.is_kick_add_mode else challenge.defender.rank
 			return
@@ -48,8 +48,7 @@ class Player:
 		elif self.rank > challenge.loser.rank:
 			self.rank += 1
 			
-			
-	def add_challenge_record(self, challenge):
+	def set_records(self, challenge):
 		if challenge.winner.key == self.key:
 			self.cha_wins += 1
 			self.wins_total += challenge.winner.wins
@@ -67,10 +66,6 @@ class Player:
 		self.games_played_1v1 += challenge.games1v1
 		self.games_played_2v2 += challenge.games2v2
 		
-	
-	
-	
-	
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
 		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
@@ -89,8 +84,6 @@ class Player:
 			else:
 				return None
 		
-	###--------------------------Private.Methods-----------------------###
-
 	###--------------------------Public.Properties-----------------------###
 	@classmethod
 	def instance_with_rank(cls, key, value, legacy):
@@ -120,21 +113,18 @@ class Player:
 	@cached_property
 	def fecha_de_alta(self):
 		return self.challenges[0]
-		
-	@cached_property
-	def is_black(self):
-		return True if self.key in {PLAYERS["ANDY"].key, PLAYERS["LAU"].key} else False
 
 	###--------------------------Public.dundermethod-----------------------###
+	def __lt__(self, other):
+		return self.key < other.key
+		
 	def __gt__(self, other):
-		def get_cha_winrate(self):
-			if self.cha_wins == 0:
-				return 0
-			return (self.cha_wins / total_matches) * 100.0
+		def get_cha_winrate(player):
+			return (player.wins1v1_total / player.games_played_total) * 100.0 if player.games_played_total != 0 else 0
 			
 		bol = self.get_1v1_vs(other, print_em=False)
 		if bol is None:
-			bol = self.get_cha_winrate()  > other.get_cha_winrate()
+			bol = get_cha_winrate(self)  > get_cha_winrate(other)
 		print(f"{self.key} better than {other.key} = {bol}")
 		return bol
 
@@ -164,32 +154,28 @@ class ChallengeEvent:
 		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 		
-		self.__01_asegurar_integridad_de_row()
-		self.__02_compute_logic()
-		self.__03_freeze_current_top_10_string()
+		self.__01_asegurar_row_integrity()
+		self.__02_set_player_records()
+		self.__03_set_player_ranks()
+		self.__04_freeze_current_top_10_string()
 
 
 	###--------------------------Private.Methods-----------------------###
-	def __01_asegurar_integridad_de_row(self):
+	def __01_asegurar_row_integrity(self):
 		if not self.is_normal_mode and self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
-	
-	def __02_compute_logic(self):
-		""" the smaller rank, the more "up". is_kick_add_mode: winner was added in the 10'th spot, so everyone down is further pushed down.. otherwise: winner gets defender's spot, and everyone down is further pushed down """
+	def __02_set_player_records(self):
 		if self.is_normal_mode:
-			self.winner.history.add_challenge_record(self)
-			self.loser.history.add_challenge_record(self)
+			self.winner.history.set_records(self)
+			self.loser.history.set_records(self)
 			
+	def __03_set_player_ranks(self):
 		if self.challenger is self.winner:
 			for player in self.chasys.PLAYERS.values():
-				player.update_rank(self)	
+				player.set_rank(self)	
 			
-			
-		
-			
-			
-	def __03_freeze_current_top_10_string(self):
+	def __04_freeze_current_top_10_string(self):
 		top_10_as_dict = {
 			player.rank: player
 			for player in self.chasys.PLAYERS.values()
@@ -256,7 +242,12 @@ class ChallengeEvent:
 
 
 
+			
+	
 	###--------------------------Public.dundermethod-----------------------###
+	def __lt__(self, other):
+		return self.key < other.key
+		
 	def __repr__(self):
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 		
@@ -356,18 +347,7 @@ class PlayerInChallenge:
 	###--------------------------Public.Properties-----------------------###
 	@cached_property
 	def rank_ordinal(self):
-		ordinal = {
-			1: "1st",
-			2: "2nd",
-			3: "3rd",
-			4: "4th",
-			5: "5th",
-			6: "6th",
-			7: "7th",
-			8: "8th",
-			9: "9th",
-			10: "10th"
-		}
+		ordinal = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th"}
 		return ordinal.get(self.rank, "from outside the list")
 		
 	@cached_property
@@ -400,22 +380,20 @@ class ChallengeSystem:
 		self.chacsv = chacsv
 		self.chalog = chalog
 		self.status = status
+		self.__do_01_read_csv()
 		
 		
 		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
 		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
 		self.CHALLENGES = { key: ChallengeEvent(self, key, row) for key, row  in self.data.iterrows() }
 		if write_log:
-			self.__do_01_write_chalog()
+			self.__do_02_write_chalog()
 		if write_csv:
-			self.__do_02_write_csv(reverse=False)
-		self.__do_03_write_status()
+			self.__do_03_write_csv(reverse=False)
+		self.__do_04_write_status()
 		
 	###--------------------------Public.Methods-----------------------###
-	def consult_01_challenge_log(self, reverse=False):
-		for cha in self.sorted_challenges(reverse).values():
-			print(cha)
-			
+
 	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
 		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
 		
@@ -428,18 +406,18 @@ class ChallengeSystem:
 
 	
 	###--------------------------Private.Methods-----------------------###
-	def sorted_challenges(self, reverse):
-		return {key: value for key, value in sorted(self.CHALLENGES.items(), reverse=reverse)}
+	def __do_01_read_csv(self):
+		if self.chacsv.exists() and self.chacsv.stat().st_size >0 :
+			self.data = pd.read_csv(self.chacsv, sep = ";", encoding = "latin1")
+		else:
+			self.data = pd.DataFrame(columns=['key','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date'])
+		self.data.set_index('key', inplace=True)
+		self.data.sort_index(inplace=True, ascending=True)
 		
-	def __do_02_write_csv(self, reverse):
-		if reverse:
-			data.sort_index(inplace=True, ascending=False)
-		data.to_csv(self.chacsv, sep = ";", index = True, decimal = ",", encoding = "latin1")
-		print(".csv guardado.")
-
-	def __do_01_write_chalog(self):
+	def __do_02_write_chalog(self):
 		super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
-		for num, cha in enumerate(self.sorted_challenges(reverse=True).values(), start=1):
+		
+		for num, cha in enumerate( sorted( self.CHALLENGES.values(),reverse=True ) , start=1):
 			if num == 1:
 				ChallengeSystem.rename_folder("torename", cha.replays_folder_name, compress=False)
 				print(cha)
@@ -448,9 +426,15 @@ class ChallengeSystem:
 		with open(self.chalog, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
+		
+	def __do_03_write_csv(self, reverse):
+		if reverse:
+			self.data.sort_index(inplace=True, ascending=False)
+		self.data.to_csv(self.chacsv, sep = ";", index = True, decimal = ",", encoding = "latin1")
+		print(".csv guardado.")
 
-	def __do_03_write_status(self):
-		super_string = "\n".join(str(player) for player in sorted(self.PLAYERS.values(), key=lambda x: x.key))
+	def __do_04_write_status(self):
+		super_string = "\n".join(str(player) for player in sorted( self.PLAYERS.values() ))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
@@ -478,20 +462,11 @@ class ChallengeSystem:
 			ChallengeSystem.compress_folder(ideal)
 			
 			
-	###------------------------------Properties-----------------------###
-	
-	@cached_property
-	def data(self):
-		if self.chacsv.exists() and self.chacsv.stat().st_size >0 :
-			data = pd.read_csv(self.chacsv, sep = ";", encoding = "latin1")
-		else:
-			data = pd.DataFrame(columns=['key','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date'])
-		data.set_index('key', inplace=True)
-		data.sort_index(inplace=True, ascending=True)
-		return data
-			
-	
-
+		
+		
+		
+		
+		
 #-------------------------------------------------------------------------------------------------------------#
 #"""---------------------------------------------ok.Iniciar-------------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
@@ -506,7 +481,6 @@ if __name__ == "__main__":
 	)
 
 	"""4. Consultas functions"""
-	# sistema.consult_01_challenge_log(reverse=False)
 	# sistema.consult_03_player_vs_player()
 	# sistema.consult_04_who_is_black()
 	# sistema.consult_05_2v2_score()
