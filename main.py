@@ -32,6 +32,23 @@ class Player:
 		
 		
 	###--------------------------Public.Methods-----------------------###
+	def update_rank(self, challenge):
+		if self.key == challenge.challenger.key:
+			self.rank = 10 if challenge.is_kick_add_mode else challenge.defender.rank
+			return
+		elif self.key == challenge.defender.key:
+			self.rank += len(challenge.chasys.PLAYERS) if challenge.is_kick_add_mode else 1
+			return
+		
+		if self.rank > challenge.winner.rank:
+			self.rank -= 1
+			
+		if challenge.is_kick_add_mode and 11 > self.rank > challenge.loser.rank:
+			self.rank -= 1
+		elif self.rank > challenge.loser.rank:
+			self.rank += 1
+			
+			
 	def add_challenge_record(self, challenge):
 		if challenge.winner.key == self.key:
 			self.cha_wins += 1
@@ -164,21 +181,12 @@ class ChallengeEvent:
 			self.winner.history.add_challenge_record(self)
 			self.loser.history.add_challenge_record(self)
 			
-		if self.challenger is not self.winner:
-			return
+		if self.challenger is self.winner:
+			for player in self.chasys.PLAYERS.values():
+				player.update_rank(self)	
 			
-		self.challenger.history.rank = 10 if self.is_kick_add_mode else self.defender.rank
-		self.defender.history.rank += len(self.chasys.PLAYERS) if self.is_kick_add_mode else 1 
+			
 		
-		for player in self.chasys.PLAYERS.values():
-			if player.key in {self.winner.key, self.loser.key}:
-				continue
-			elif player.rank > self.winner.rank:
-				player.rank -= 1
-			if self.is_kick_add_mode and 11 > player.rank > self.loser.rank:
-				player.rank -= 1
-			elif player.rank > self.loser.rank:
-				player.rank += 1
 			
 			
 	def __03_freeze_current_top_10_string(self):
@@ -342,7 +350,9 @@ class PlayerInChallenge:
 		self.history = self.challenge.chasys.PLAYERS[key]
 		self.history.challenges.append(self.challenge)
 		self.rank = self.history.rank
-		
+			
+			
+			
 	###--------------------------Public.Properties-----------------------###
 	@cached_property
 	def rank_ordinal(self):
