@@ -180,36 +180,34 @@ class ChallengeEvent:
 	###--------------------------Private.Methods-----------------------###
 	def __generate_discord_payload(self):
 		def create_embed():
-			# Define a color gradient based on outcome (for example, green for a win, red for a loss)
-			embed_color = 0x4CAF50 if self.winner else 0xF44336  # Green for win, Red for loss
+			embed_color = 0x4CAF50 if self.winner else 0xF44336  # Color based on win or loss
 
 			# Preformatted top 10 leaderboard table
 			top10_table = f"```diff\n{self.top10}```"
 
-			# Prepare the message content based on different modes
+			# Message content based on modes
 			if self.is_no_score_mode:
 				scores_message = "No score mode active. Scores not tracked."
 			elif self.is_kick_add_mode:
 				scores_message = "Kick/Add mode active. Please ensure player roster is up-to-date."
 			else:
 				scores_message = (
-					f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}\n"
-					f"Score 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\n"
-					f"Total Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+					f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+					f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+					f"\nTotal Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
 				)
 
-			# Create the embed with styled fields
 			embed = {
 				"color": embed_color,
-				"title": "Challenge Results",
-				"description": f"Here are the results for the latest challenge between **{self.challenger.history.name}** and **{self.defender.history.name}**.",
+				"title": "A new Challenge has been registered!",
+				"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 				"fields": [
 					{
 						"name": f"Challenge № {self.key}",
 						"value": (
-							f"- **Update Time**: {self.dateString}\n"
-							f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})\n"
-							f"- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
+							f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
+							f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
+							f"\n- **Update Time**: {self.dateString}"
 						),
 						"inline": False
 					},
@@ -223,7 +221,7 @@ class ChallengeEvent:
 						"value": (
 							f"+ {self.winner.history.name} "
 							f"{'flawlessly ' if self.loser.wins == 0 else ''}"
-							f"{'defended' if self.defender is self.winner else 'taken over'} "
+							f"{'defended' if self.defender is self.winner else 'has taken over'} "
 							f"the **{self.defender.rank_ordinal}** spot!"
 						),
 						"inline": False
@@ -240,7 +238,10 @@ class ChallengeEvent:
 					}
 				],
 				"timestamp": datetime.utcnow().isoformat(),
-				"footer": {"text": "Challenge Bot | Keep Challenging!"}
+				"footer": {"text": "Let the challenges continue!"},
+				# "image": {
+					# "url": "https://www.gamereplays.org/community/uploads/post-205669-1658594489.png"
+				# }
 			}
 
 			# Return the embed
