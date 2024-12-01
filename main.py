@@ -6,6 +6,7 @@ import json
 import py7zr
 from functools import cached_property
 from bidict import bidict
+import requests
     
     
     
@@ -185,9 +186,92 @@ class ChallengeEvent:
 		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
 			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 
+	def __generate_discord_payload(self):
+		def create_embed():
+			# Embed color as an example, dark greenish color
+			embed_color = 0x100401
+
+			# Use the pre-formatted self.top10 directly
+			top10_table = f"```diff\n{self.top10}```"
+
+			embed = {
+				"color": embed_color,
+				"fields": [
+					{
+						"name": f"Challenge № {self.key}",
+						"value": (
+							f"- Update {self.dateString}\n"
+							f"- Challenger: {self.challenger.history.name} ({self.challenger.rank_ordinal})\n"
+							f"- Defender: {self.defender.history.name} ({self.defender.rank_ordinal})"
+						),
+						"inline": False
+					},
+					{
+						"name": "Scores",
+						"value": (
+							f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}\n"
+							f"Score 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}\n"
+							f"Total Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+						),
+						"inline": False
+					},
+					{
+						"name": "Outcome",
+						"value": (
+							f"+ {self.winner.history.name} "
+							f"{'flawlessly ' if self.loser.wins == 0 else ''}"
+							f"{'defended' if self.defender is self.winner else 'taken over'} "
+							f"the {self.defender.rank_ordinal} spot!"
+						),
+						"inline": False
+					},
+					{
+						"name": "Games Played In",
+						"value": f"{self.version}",
+						"inline": False
+					},
+					{
+						"name": "Let the Challenges Continue!",
+						"value": top10_table,
+						"inline": False
+					}
+				],
+				"timestamp": datetime.utcnow().isoformat(),
+				"footer": {"text": "Challenge Bot"}
+			}
+			return embed
+
+		# Build the payload
+		return {
+			"content": None,  # Optional message outside the embed
+			"embeds": [create_embed()]
+		}
 
 
-	###--------------------------Public.Properties-----------------------###
+	###--------------------------Public.Methods-----------------------###
+	
+	def send_to_chlng_updates(self):
+		payload = self.__generate_discord_payload()
+		headers = {
+			"Content-Type": "application/json"
+		}
+		webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+		response = requests.post(webhook_url, json=payload)
+		
+		if response.status_code == 204:
+			success_status = "Webhook sent successfully!"
+		else:
+			success_status = f"Failed to send webhook: {response.status_code} - {response.text}"
+		
+		print(success_status)
+	
+	
+	
+	
+	
+	
+	
+	
 	@cached_property
 	def winner(self):
 		return self.player1 if (self.player1.wins > self.player2.wins or not self.is_normal_mode) else self.player2
@@ -485,3 +569,6 @@ if __name__ == "__main__":
 	# sistema.consult_04_who_is_black()
 	# sistema.consult_05_2v2_score()
 	
+	
+	"""1. SendToChlngUpdates"""
+	sistema.CHALLENGES[311].send_to_chlng_updates()
