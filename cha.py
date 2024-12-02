@@ -177,80 +177,79 @@ class ChallengeEvent:
 		return success_status
 
 	###--------------------------Private.Methods-----------------------###
-	def payload(self):
-		def create_embed():
-			embed_color = 0x4CAF50 if self.winner else 0xF44336  # Color based on win or loss
+	
+	@cached_property
+	def message(self):
+		return "📢 **Challenge Update!** A new match result is in! Check out the details below."
+	
+	@cached_property
+	def embed(self):
+		embed_color = 0x4CAF50 if self.winner else 0xF44336  # Color based on win or loss
 
-			# Preformatted top 10 leaderboard table
-			top10_table = f"```diff\n{self.top10}```"
+		# Preformatted top 10 leaderboard table
+		top10_table = f"```diff\n{self.top10}```"
 
-			# Message content based on modes
-			if self.is_no_score_mode:
-				scores_message = "No score mode active. Scores not tracked."
-			elif self.is_kick_add_mode:
-				scores_message = "Kick/Add mode active. Please ensure player roster is up-to-date."
-			else:
-				scores_message = (
-					f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-					f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
-					f"\nTotal Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-				)
+		# Message content based on modes
+		if self.is_no_score_mode:
+			scores_message = "No score mode active. Scores not tracked."
+		elif self.is_kick_add_mode:
+			scores_message = "Kick/Add mode active. Please ensure player roster is up-to-date."
+		else:
+			scores_message = (
+				f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+				f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+				f"\nTotal Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+			)
 
-			embed = {
-				"color": embed_color,
-				"title": "A new Challenge has been registered!",
-				"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
-				"fields": [
-					{
-						"name": f"Challenge № {self.key}",
-						"value": (
-							f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
-							f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-							f"\n- **Update Time**: {self.dateString}"
-						),
-						"inline": False
-					},
-					{
-						"name": "Scores",
-						"value": scores_message,
-						"inline": False
-					},
-					{
-						"name": "Outcome",
-						"value": (
-							f"+ {self.winner.history.name} "
-							f"{'flawlessly ' if self.loser.wins == 0 else ''}"
-							f"{'defended' if self.defender is self.winner else 'has taken over'} "
-							f"the **{self.defender.rank_ordinal}** spot!"
-						),
-						"inline": False
-					},
-					{
-						"name": "Games Played In",
-						"value": f"{self.version}",
-						"inline": True
-					},
-					{
-						"name": "Let the Challenges Continue!",
-						"value": top10_table,
-						"inline": False
-					}
-				],
-				"timestamp": datetime.utcnow().isoformat(),
-				"footer": {"text": "Let the challenges continue!"},
-				# "image": {
-					# "url": "https://www.gamereplays.org/community/uploads/post-205669-1658594489.png"
-				# }
-			}
-
-			# Return the embed
-			return embed
-
-		# Return the payload with the embed
-		return {
-			"content": None,  # Optional message outside the embed
-			"embeds": [create_embed()]
+		embed = {
+			"color": embed_color,
+			"title": "A new Challenge has been registered!",
+			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
+			"fields": [
+				{
+					"name": f"Challenge № {self.key}",
+					"value": (
+						f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
+						f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
+						f"\n- **Update Time**: {self.dateString}"
+					),
+					"inline": False
+				},
+				{
+					"name": "Scores",
+					"value": scores_message,
+					"inline": False
+				},
+				{
+					"name": "Outcome",
+					"value": (
+						f"+ {self.winner.history.name} "
+						f"{'flawlessly ' if self.loser.wins == 0 else ''}"
+						f"{'defended' if self.defender is self.winner else 'has taken over'} "
+						f"the **{self.defender.rank_ordinal}** spot!"
+					),
+					"inline": False
+				},
+				{
+					"name": "Games Played In",
+					"value": f"{self.version}",
+					"inline": True
+				},
+				{
+					"name": "Let the Challenges Continue!",
+					"value": top10_table,
+					"inline": False
+				}
+			],
+			"timestamp": datetime.utcnow().isoformat(),
+			"footer": {"text": "Let the challenges continue!"},
+			# "image": {
+				# "url": "https://www.gamereplays.org/community/uploads/post-205669-1658594489.png"
+			# }
 		}
+
+		# Return the embed
+		return embed
 
 
 	def __01_asegurar_row_integrity(self):
@@ -323,10 +322,10 @@ class ChallengeEvent:
 		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
 		
 	@cached_property
-	def replay_location(self):
+	def replayfile(self):
 		real_location = Path(r"D:\MEGA\BFME2 - Ecthelion Replays\_ChallengueLeage_Replays") / f"{self.replays_folder_name}.rar"
 		if real_location.exists():
-			return real_location
+			return str(real_location)
 		else:
 			return None
 		
@@ -592,4 +591,4 @@ if __name__ == "__main__":
 	"""1. SendToChlngUpdates"""
 	# instance = SISTEMA.CHALLENGES[311]
 	# success_status = instance.send_to_chlng_updates()
-	# ic(instance.replay_location)
+	# ic(instance.replayfile)

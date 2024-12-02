@@ -331,14 +331,25 @@ async def muka(channel):
 async def chalog(channel, cha_id):
 	if str(channel.author.id) in [DiscordID.ECTH.value]:
 		if cha_id.isnumeric():
-			cha = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
-			if cha:
-				success_status = cha.send_to_chlng_updates(WebhooksURL.THEPIG.value)
+			instance = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
+			if instance:
+				webhook = discord.SyncWebhook.from_url(WebhooksURL.THEPIG.value)
+				embed = discord.Embed.from_dict(instance.embed)
+				if instance.replayfile:
+					file = discord.File(instance.replayfile)
+					webhook.send(content=instance.message, embed=embed, file=file)
+					webhook_message = webhook.send(file=file, wait=True)  # `wait=True` ensures the message object is returned
+					attachment_url = webhook_message.attachments[0].url
+					embed.add_field(name="Replay File", value=f"[Download here]({attachment_url})", inline=False)
+					webhook.send(embed=embed)
+					await channel.send(f"Challenge Nº {cha_id} registered without replay.")
+				else:
+					webhook.send(content=instance.message, embed=embed)
+					await channel.send(f"Challenge Nº {cha_id} registered with replay.")
 			else:
-				success_status = f"Challenge Nº {cha_id} not found"
+				await channel.send(f"Challenge Nº {cha_id} not found")
 		else:
-			success_status = f"Invalid challenge ID: {cha_id}"
-		await channel.send(success_status)
+			await channel.send(f"Invalid challenge ID: {cha_id}")
 	else:
 		await channel.send("You don't have permissions to send this shit.")
 
