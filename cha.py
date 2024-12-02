@@ -162,12 +162,12 @@ class ChallengeEvent:
 
 	
 	###--------------------------Public.Methods-----------------------###
-	def send_to_chlng_updates(self):
+	def send_to_chlng_updates(self, webhook_url):
 		payload = self.__generate_discord_payload()
 		headers = {
 			"Content-Type": "application/json"
 		}
-		webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+		# webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
 		response = requests.post(webhook_url, json=payload)
 		
 		if response.status_code == 204:
@@ -175,7 +175,7 @@ class ChallengeEvent:
 		else:
 			success_status = f"Failed to send webhook: {response.status_code} - {response.text}"
 		
-		print(success_status)
+		return success_status
 
 	###--------------------------Private.Methods-----------------------###
 	def __generate_discord_payload(self):
@@ -583,4 +583,4 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	# SISTEMA.CHALLENGES[311].send_to_chlng_updates()
+	# success_status = SISTEMA.CHALLENGES[311].send_to_chlng_updates()

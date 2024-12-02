@@ -13,6 +13,7 @@ from datetime import datetime
 import random
 import json
 import requests
+import cha as cha_module
 
 
 ##-------------------------------------------------------------------##
@@ -41,6 +42,10 @@ logging.basicConfig(level=logging.INFO)
 ##-------------------------------------------------------------------##
 ##------------------------class.Enums.class--------------------------##
 ##-------------------------------------------------------------------##
+class WebhooksURL(Enum):
+	THEPIG = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+	
+	
 class DiscordID(Enum):
     TEMPT = "573249577801482270"
     ECTH = "280848366030815233"
@@ -322,46 +327,21 @@ async def undy(channel):
 async def muka(channel):
 	await channel.send( QUOTES.get_random_quote_from(AUTHORS.MAKA) )
 
-	
 @bot.command()
-async def cha_update(channel):
-	webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
-	payload = {
-		"content": None,
-		"embeds": [
-			{
-				"title": "New challenge match!",
-				"description": "- Challenge 🏅 287\n- Update 2024-02-11\n\n@urby0572, known as Urby (from outside the list) has challenged @enumara, known as ENUMAra (6th) for his spot. \n\nScore 1vs1: 5-0 for ENUMAra\n\n+ ENUMAra has flawlessly defended the 6th spot!\n\nGames were played in 1.09v3.0\n\nLet the challenges continue!",
-				"color": 10040115,  # Decimal color code
-				"fields": [
-					{
-						"name": "BFME2 Top 10 Best Players List",
-						"value": (
-							"```\n"
-							"    10   . TaR|Gr3ndal        2-3\n"
-							"     9   . KurdishBeg        1-1\n"
-							"     8   . Lotlorien         8-13\n"
-							"     7   . Yu$ufNi$ic        4-4\n"
-							"     6   . ENUMAra          5-5\n"
-							"     5   . Eol Ecthelion    50-38\n"
-							"     4   . Gannicus         4-2\n"
-							"     3   . 1.6 ArCh4Ng3L    30-54\n"
-							"     2   . Ahwehahwe         9-5\n"
-							"     1   . AndyBrandy       21-14\n"
-							"```"
-						),
-					}
-				],
-			}
-		],
-	}
-	response = requests.post(webhook_url, json=payload)
-	if response.status_code == 204:
-		success_status = "Webhook sent successfully!"
+async def chalog(channel, cha_id):
+	if str(channel.author.id) in [DiscordID.ECTH.value]:
+		if cha_id.isnumeric():
+			cha = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
+			if cha:
+				success_status = cha.send_to_chlng_updates(WebhooksURL.THEPIG.value)
+			else:
+				success_status = f"Challenge Nº {cha_id} not found"
+		else:
+			success_status = f"Invalid challenge ID: {cha_id}"
+		await channel.send(success_status)
 	else:
-		success_status = f"Failed to send webhook: {response.status_code} - {response.text}"
-	
-	await bot.get_channel(ChannelID.TOP10_STATUS.value).send( success_status )
+		await channel.send("You don't have permissions to send this shit.")
+
 
 	
 
