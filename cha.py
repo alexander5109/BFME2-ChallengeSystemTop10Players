@@ -162,12 +162,56 @@ class ChallengeEvent:
 
 	
 	###--------------------------Public.Methods-----------------------###
-	def send_to_chlng_updates(self, webhook_url):
-		headers = {
-			"Content-Type": "application/json"
+	def send_to_chlng_updates(self, webhook_url=None):
+		if webhook_url is None:
+			webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+		if self.replays:
+			with open(self.replays, "rb") as file:
+				files = {"file": file}
+				response = requests.post(
+					webhook_url,
+					data={"content": self.message},
+					files=files
+				)
+		else:
+			response = requests.post(
+				webhook_url,
+				json={"content": self.message, "embeds": [self.embed]}
+			)
+
+		if response.status_code != 200 and response.status_code != 204:
+			return f"Failed to send initial webhook: {response.status_code} - {response.text}"
+
+		# Step 2: Edit the message to include the embed
+		if self.replays and response.status_code == 200:
+			webhook_message = response.json()
+			message_id = webhook_message["id"]
+			webhook_url_edit = f"{webhook_url}/messages/{message_id}"
+
+			edit_payload = {
+				"content": self.message,
+				"embeds": [self.embed]
+			}
+
+			edit_response = requests.patch(
+				webhook_url_edit,
+				json=edit_payload
+			)
+
+			if edit_response.status_code not in (200, 204):
+				return f"Failed to edit webhook message: {edit_response.status_code} - {edit_response.text}"
+
+		return "Webhook sent successfully!"
+    
+	def send_to_chlng_updates1(self):
+		payload = {
+			"content": self.message,
+			"embeds": [self.embed],  # Must be a list of embed dictionaries
 		}
-		# webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
-		response = requests.post(webhook_url, json=self.payload())
+		files = {"file": open(self.replays, "rb")} if self.replays else None
+		if webhook_url is None:
+			webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+		response = requests.post(webhook_url, json=payload, files=files)
 		
 		if response.status_code == 204:
 			success_status = "Webhook sent successfully!"
@@ -589,6 +633,6 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	# instance = SISTEMA.CHALLENGES[311]
-	# success_status = instance.send_to_chlng_updates()
+	instance = SISTEMA.CHALLENGES[int(input("Ingresar ID de challenge a send to discord. Make sure his replays exist"))]
+	success_status = instance.send_to_chlng_updates()
 	# ic(instance.replays)
