@@ -163,12 +163,11 @@ class ChallengeEvent:
 	
 	###--------------------------Public.Methods-----------------------###
 	def send_to_chlng_updates(self, webhook_url):
-		payload = self.__generate_discord_payload()
 		headers = {
 			"Content-Type": "application/json"
 		}
 		# webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
-		response = requests.post(webhook_url, json=payload)
+		response = requests.post(webhook_url, json=self.payload())
 		
 		if response.status_code == 204:
 			success_status = "Webhook sent successfully!"
@@ -178,7 +177,7 @@ class ChallengeEvent:
 		return success_status
 
 	###--------------------------Private.Methods-----------------------###
-	def __generate_discord_payload(self):
+	def payload(self):
 		def create_embed():
 			embed_color = 0x4CAF50 if self.winner else 0xF44336  # Color based on win or loss
 
@@ -322,6 +321,14 @@ class ChallengeEvent:
 	@cached_property
 	def replays_folder_name(self):
 		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
+		
+	@cached_property
+	def replay_location(self):
+		real_location = Path(r"D:\MEGA\BFME2 - Ecthelion Replays\_ChallengueLeage_Replays") / f"{self.replays_folder_name}.rar"
+		if real_location.exists():
+			return real_location
+		else:
+			return None
 		
 	# @cached_property
 	# def players_involved(self):
@@ -583,4 +590,6 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	# success_status = SISTEMA.CHALLENGES[311].send_to_chlng_updates()
+	# instance = SISTEMA.CHALLENGES[311]
+	# success_status = instance.send_to_chlng_updates()
+	# ic(instance.replay_location)
