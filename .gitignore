@@ -1,5 +1,8 @@
 *.rar
-/*.rar
+@*
+/venv
+__pycache__
+mytoken.py
 *.pyc
 *.idea
 *.lnk
