@@ -327,32 +327,39 @@ async def undy(channel):
 async def muka(channel):
 	await channel.send( QUOTES.get_random_quote_from(AUTHORS.MAKA) )
 
-@bot.command()
-async def chalog(channel, cha_id):
-	if str(channel.author.id) in [DiscordID.ECTH.value]:
-		if cha_id.isnumeric():
-			instance = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
-			if instance:
-				webhook = discord.SyncWebhook.from_url(WebhooksURL.THEPIG.value)
-				embed = discord.Embed.from_dict(instance.embed)
-				if instance.replayfile:
-					file = discord.File(instance.replayfile)
-					webhook.send(content=instance.message, embed=embed, file=file)
-					webhook_message = webhook.send(file=file, wait=True)  # `wait=True` ensures the message object is returned
-					attachment_url = webhook_message.attachments[0].url
-					embed.add_field(name="Replay File", value=f"[Download here]({attachment_url})", inline=False)
-					webhook.send(embed=embed)
-					await channel.send(f"Challenge Nº {cha_id} registered without replay.")
-				else:
-					webhook.send(content=instance.message, embed=embed)
-					await channel.send(f"Challenge Nº {cha_id} registered with replay.")
-			else:
-				await channel.send(f"Challenge Nº {cha_id} not found")
-		else:
-			await channel.send(f"Invalid challenge ID: {cha_id}")
-	else:
-		await channel.send("You don't have permissions to send this shit.")
 
+
+
+
+def fire_challenge_webhook(webhook, challenge):
+	webhook = discord.SyncWebhook.from_url(WebhooksURL.THEPIG.value)
+	embed = discord.Embed.from_dict(challenge.embed)
+	if challenge.replays:
+		file = discord.File(challenge.replays)
+		webhook_message = webhook.send(content=challenge.message, embed=embed, file=file, wait=True)
+		attachment_url = webhook_message.attachments[0].url
+		embed.add_field(name="Replay File",value=f"[Download here]({attachment_url})",inline=False)
+		webhook.edit_message(message_id=webhook_message.id,embed=embed)
+	else:
+		webhook.send(content=challenge.message, embed=embed)
+	
+	
+
+
+@bot.command()
+async def chalog(ctx, cha_id):
+	if str(ctx.author.id) in [DiscordID.ECTH.value]:
+		if cha_id.isnumeric():
+			challenge = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
+			if challenge:
+				fire_challenge_webhook(WebhooksURL.THEPIG.value, challenge)
+				await ctx.send(f"Challenge Nº {cha_id} registered {'with' if challenge.replays else 'without'} replay.")
+			else:
+				await ctx.send(f"Challenge Nº {cha_id} not found.")
+		else:
+			await ctx.send(f"Invalid challenge ID: {cha_id}")
+	else:
+		await ctx.send("You don't have permissions to send this.")
 
 	
 

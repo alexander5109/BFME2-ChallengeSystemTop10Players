@@ -322,7 +322,7 @@ class ChallengeEvent:
 		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
 		
 	@cached_property
-	def replayfile(self):
+	def replays(self):
 		real_location = Path(r"D:\MEGA\BFME2 - Ecthelion Replays\_ChallengueLeage_Replays") / f"{self.replays_folder_name}.rar"
 		if real_location.exists():
 			return str(real_location)
@@ -591,4 +591,4 @@ if __name__ == "__main__":
 	"""1. SendToChlngUpdates"""
 	# instance = SISTEMA.CHALLENGES[311]
 	# success_status = instance.send_to_chlng_updates()
-	# ic(instance.replayfile)
+	# ic(instance.replays)
