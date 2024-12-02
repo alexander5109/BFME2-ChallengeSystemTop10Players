@@ -118,7 +118,7 @@ class QuotesManager:
 			QUOTES.get_random_quote_from(AUTHORS.TRUCKY, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.SHINODA, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.MUSTAFA, format=False),
-			QUOTES.get_random_quote_from(AUTHORS.TEMPTATION, type=Quote.Type.CCC, format=False),
+			QUOTES.get_random_quote_from(AUTHORS.TEMPT, type=Quote.Type.CCC, format=False),
 		])
 	def martes_quotes(self):
 		return random.choice([
@@ -344,8 +344,6 @@ def fire_challenge_webhook(webhook, challenge):
 		webhook.send(content=challenge.message, embed=embed)
 	
 	
-
-
 @bot.command()
 async def chalog(ctx, cha_id):
 	if str(ctx.author.id) in [DiscordID.ECTH.value]:
@@ -359,7 +357,7 @@ async def chalog(ctx, cha_id):
 		else:
 			await ctx.send(f"Invalid challenge ID: {cha_id}")
 	else:
-		await ctx.send("You don't have permissions to send this.")
+		await ctx.send("Only bambi can send this shit.")
 
 	
 
