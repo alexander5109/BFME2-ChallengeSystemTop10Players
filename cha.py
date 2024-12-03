@@ -367,7 +367,7 @@ class ChallengeEvent:
 		
 	@cached_property
 	def replays(self):
-		real_location = Path(r"D:\MEGA\BFME2 - Ecthelion Replays\_ChallengueLeage_Replays") / f"{self.replays_folder_name}.rar"
+		real_location = self.chasys.chareps / f"{self.replays_folder_name}.rar"
 		if real_location.exists():
 			return str(real_location)
 		else:
@@ -513,7 +513,8 @@ class PlayerInChallenge:
 #"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
-	def __init__(self, chacsv, chalog, status, player_data, write_log, write_csv, write_status):
+	def __init__(self, chareps, chacsv, chalog, status, player_data, write_log, write_csv, write_status):
+		self.chareps = chareps
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
 		if not chalog.exists():
@@ -613,6 +614,7 @@ class ChallengeSystem:
 
 SISTEMA = ChallengeSystem(
 	player_data = json.load(open(r"data\players.json")),
+	chareps=Path.cwd() / r"data\cha_replays",
 	chacsv=Path.cwd() / r"data\challenges.csv",
 	chalog=Path.cwd() / r"output\challenges.log",
 	status=Path.cwd() / r"output\status.log",
@@ -633,6 +635,7 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	instance = SISTEMA.CHALLENGES[int(input("Ingresar ID de challenge a send to discord. Make sure his replays exist"))]
+	instance = SISTEMA.CHALLENGES[int(input("Send a challenge to Chlng|Updates using Challenge webhook as embeded msg? Write the ID challenge ID: "))]
 	success_status = instance.send_to_chlng_updates()
 	# ic(instance.replays)
+
