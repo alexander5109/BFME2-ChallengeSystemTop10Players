@@ -162,9 +162,7 @@ class ChallengeEvent:
 
 	
 	###--------------------------Public.Methods-----------------------###
-	def send_to_chlng_updates(self, webhook_url=None):
-		if webhook_url is None:
-			webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+	def send_as_webhook(self, webhook_url):
 		if self.replays:
 			with open(self.replays, "rb") as file:
 				files = {"file": file}
@@ -209,8 +207,6 @@ class ChallengeEvent:
 			"embeds": [self.embed],  # Must be a list of embed dictionaries
 		}
 		files = {"file": open(self.replays, "rb")} if self.replays else None
-		if webhook_url is None:
-			webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
 		response = requests.post(webhook_url, json=payload, files=files)
 		
 		if response.status_code == 204:
@@ -536,6 +532,19 @@ class ChallengeSystem:
 			self.write_status()
 		
 	###--------------------------Public.Methods-----------------------###
+	def get_challenge(self):
+		while True:
+			ingreso = input("Send a challenge to Chlng|Updates using Challenge webhook as embeded msg? Write the ID challenge ID: ")
+			if not input.isnumeric():
+				print("Must to be number")
+				continue
+			ingreso = int(ingreso)
+			if not instance := self.CHALLENGES.get(ingreso)
+				print("Challenge Nº{ingreso} is not loged")
+				continue
+			else:
+				return instance
+	
 	def write_csv(self, reverse):
 		if reverse:
 			self.data.sort_index(inplace=True, ascending=False)
@@ -614,13 +623,13 @@ class ChallengeSystem:
 
 SISTEMA = ChallengeSystem(
 	player_data = json.load(open(r"data\players.json")),
-	chareps=Path.cwd() / r"data\cha_replays",
-	chacsv=Path.cwd() / r"data\challenges.csv",
-	chalog=Path.cwd() / r"output\challenges.log",
-	status=Path.cwd() / r"output\status.log",
-	write_log=False,
-	write_csv=False,
-	write_status=False
+	chareps = Path.cwd() / r"replays",
+	chacsv = Path.cwd() / r"data\challenges.csv",
+	chalog = Path.cwd() / r"output\challenges.log",
+	status = Path.cwd() / r"output\status.log",
+	write_log = False,
+	write_csv = False,
+	write_status = False
 )
 	
 if __name__ == "__main__":
@@ -635,7 +644,5 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	instance = SISTEMA.CHALLENGES[int(input("Send a challenge to Chlng|Updates using Challenge webhook as embeded msg? Write the ID challenge ID: "))]
-	success_status = instance.send_to_chlng_updates()
-	# ic(instance.replays)
+	SISTEMA.get_challenge().send_as_webhook(webhook_url="https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA")
 
