@@ -270,41 +270,35 @@ class ChallengeEvent:
 			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
 			"title": "A new Challenge has been registered!",
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
-			"fields": [
-				{
+			"fields": [{
 					"name": f"Challenge № {self.key}",
 					"value": (
 						f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
 						f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Update Time**: {self.dateString}"
+						f"\n- **Registered Date**: {self.dateString}"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Spot Undefended",
 					"value": (
 						f"- {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Outcome",
 					"value": (
 						f"- {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Scores",
 					"value": "- No wins or losses have been scored.",
 					"inline": False
-				},
-				{
+				},{
 					"name": "Let the Challenges Continue!",
 					"value": f"```diff\n{self.top10}```",
 					"inline": False
-				}
-			],
+				}],
 			"timestamp": datetime.utcnow().isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
@@ -323,39 +317,34 @@ class ChallengeEvent:
 	def __post_kick_add_mode(self, discord_message, webhook_url):
 		embed = {
 			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
-			"title": "A new Challenge event has been registered!",
+			"title": "A new Challenge has been registered!",
 			"description": f"A player has been kicked from the list!.\n",
-			"fields": [
-				{
+			"fields": [{
 					"name": f"Challenge № {self.key}",
 					"value": (
 						f"- **Added player**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
 						f"\n- **Kicked player**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Update Time**: {self.dateString}"
+						f"\n- **Registered Date**: {self.dateString}"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Inactive players cleaning",
 					"value": (
 						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Outcome",
 					"value": (
 						f"- **{self.defender.history.name}** has been kicked from the {self.defender.rank_ordinal} spot and from the list."
 						f"\n- **{self.challenger.history.name}** has been added to the top10 list, starting in the 10th spot."
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Scores",
 					"value": "- No wins or losses have been scored.",
 					"inline": False
-				},
-				{
+				},{
 					"name": "Let the Challenges Continue!",
 					"value": f"```diff\n{self.top10}```",
 					"inline": False
@@ -377,10 +366,6 @@ class ChallengeEvent:
 		return requests.post(webhook_url, json=payload)
 		
 		
-		
-		
-
-		
 	def __post_normal_mode(self, discord_message, webhook_url):
 		if not self.replays_dir.exists():
 			raise Exception(f"Im not sending a shit without replays: Missing {self.replays_dir}")
@@ -396,17 +381,15 @@ class ChallengeEvent:
 			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
 			"title": "A new Challenge has been registered!",
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
-			"fields": [
-				{
+			"fields": [{
 					"name": f"Challenge № {self.key}",
 					"value": (
 						f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
 						f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Update Time**: {self.dateString}"
+						f"\n- **Registed Date**: {self.dateString}"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Scores",
 					"value": (
 						f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
@@ -414,8 +397,7 @@ class ChallengeEvent:
 						f"\nTotal Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Outcome",
 					"value": (
 						f"+ {self.winner.history.name} "
@@ -424,13 +406,11 @@ class ChallengeEvent:
 						f"the **{self.defender.rank_ordinal}** spot!"
 					),
 					"inline": False
-				},
-				{
+				},{
 					"name": "Games Played In",
 					"value": f"{self.version}",
 					"inline": True
-				},
-				{
+				},{
 					"name": "Let the Challenges Continue!",
 					"value": f"```diff\n{self.top10}```",
 					"inline": False
