@@ -20,6 +20,31 @@ import csv
 	
 	
 	
+# //--------------------------------------------------------------------//
+# ;;---------------------ok. funciones.input--------------------------;;
+# //--------------------------------------------------------------------//
+
+
+def get_int(msg, indent=0, show_error=True, min=None, max=None):
+	while True:
+		ingreso = input(f"{'\t'*indent}{msg}")
+		try: 
+			num = int(ingreso)
+			if (min is None or num >= min) and (max is None or num <= max):
+				return num
+			else:
+				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' esta fuera del rango {min}-{max}.")
+		except ValueError:
+			if show_error:
+				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' no es un numero.")
+
+def get_boolean(msg, letra1="Y", letra2="N", indent=0):	
+	while True:
+		ingreso = input(f"{'\t'*indent}{msg} Ingrese {letra1}/{letra2}: ").upper()
+		if ingreso == letra1:
+			return True
+		elif ingreso == letra2:
+			return False
 	
     
     
@@ -161,6 +186,7 @@ class ChallengeEvent:
 	def __init__(self, chasys, key, row):
 		self.chasys = chasys
 		self.key = key
+		self.row = row
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
@@ -176,10 +202,10 @@ class ChallengeEvent:
 	
 	###--------------------------Public.Methods-----------------------###
 	def send_as_webhook(self, webhook_url):
-		if self.is_normal_mode and not self.replays:
-			raise Exception(f"Not sending a shit without replays: Missing {self.replays.name}")
+		if self.is_normal_mode and not self.replays_dir_str:
+			raise Exception(f"Not sending a shit without replays: Missing {self.replays_dir}")
 			
-		with open(self.replays, "rb") as file:
+		with open(self.replays_dir, "rb") as file:
 			files = {"file": file}
 			response = requests.post(
 				webhook_url,
@@ -196,7 +222,7 @@ class ChallengeEvent:
 			return f"Failed to send initial webhook: {response.status_code} - {response.text}"
 
 		# Step 2: Edit the message to include the embed
-		if self.replays and response.status_code == 200:
+		if self.replays_dir_str and response.status_code == 200:
 			webhook_message = response.json()
 			message_id = webhook_message["id"]
 			webhook_url_edit = f"{webhook_url}/messages/{message_id}"
@@ -221,7 +247,7 @@ class ChallengeEvent:
 			"content": self.discord_message,
 			"embeds": [self.embed],  # Must be a list of embed dictionaries
 		}
-		files = {"file": open(self.replays, "rb")} if self.replays else None
+		files = {"file": open(self.replays_dir_str, "rb")} if self.replays_dir_str else None
 		response = requests.post(webhook_url, json=payload, files=files)
 		
 		if response.status_code == 204:
@@ -247,14 +273,10 @@ class ChallengeEvent:
 				player.set_rank(self)	
 			
 	def __04_freeze_current_top_10_string(self):
-		top_10_as_dict = {
-			player.rank: player
-			for player in self.chasys.PLAYERS.values()
-			if 1 <= player.rank <= 10
-		}
 		self.top10 = "\t\tTOP 10\n"
-		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
-			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
+		lista = [player for player in self.chasys.PLAYERS.values() if 1 <= player.rank <= 10]
+		for player in sorted(lista, key=lambda p: p.rank, reverse=True):
+			self.top10 += f"\t{player.rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 
 
 		
@@ -399,14 +421,13 @@ class ChallengeEvent:
 		return not self.is_no_score_mode and not self.is_kick_add_mode
 		
 	@cached_property
-	def replays_folder_name(self):
-		return f"Challenge{self.key}_{self.challenger.history.key} vs {self.defender.history.key}, {self.challenger.wins}-{self.defender.wins}, {self.version}"
+	def replays_dir(self):
+		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	@cached_property
-	def replays(self):
-		real_location = self.chasys.chareps / f"{self.replays_folder_name}.rar"
-		if real_location.exists():
-			return str(real_location)
+	def replays_dir_str(self):
+		if self.replays_dir.exists():
+			return str(self.replays_dir)
 		else:
 			return None
 		
@@ -462,7 +483,7 @@ class ChallengeEvent:
 			
 		return (
 			"\n------------------------------------"
-			f"\n{self.replays_folder_name}"
+			f"\n{self.replays_dir.stem}"
 			"\n```diff\n"
 			f"\n- Challenge № {self.key}"
 			f"\n- Update {self.dateString}"
@@ -530,7 +551,7 @@ class PlayerInChallenge:
 #"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
-	def __init__(self, chareps, chacsv, chalog, status, player_data, write_log, write_csv, write_status):
+	def __init__(self, chareps, chacsv, chalog, status, player_data):
 		self.chareps = chareps
 		if not chacsv.exists():
 			raise Exception("No existe el archivo de los .csv")
@@ -544,31 +565,23 @@ class ChallengeSystem:
 		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
 		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
 		self.CHALLENGES = self.read_CHALLENGES()
-		if write_log:
-			self.write_chalog()
-		if write_csv:
-			self.write_csv(reverse=False)
-		if write_status:
-			self.write_status()
 		
 	###--------------------------Public.Methods-----------------------###
-	def get_challenge(self):
-		while True:
-			ingreso = input("Send a challenge to Chlng|Updates using Challenge webhook as embeded msg? Write the ID challenge ID: ")
-			if not ingreso.isnumeric():
-				print("Must to be number")
-				continue
-			ingreso = int(ingreso)
-			if instance := self.CHALLENGES.get(ingreso):
-				return instance
-			else:
-				print("Challenge Nº{ingreso} is not loged")
-				continue
-	
-	def write_csv(self, reverse):
-		if reverse:
-			self.data.sort_index(inplace=True, ascending=False)
-		self.data.to_csv(self.chacsv, sep = ";", index = True, decimal = ",", encoding = "latin1")
+	def write_csv(self):
+		if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
+			return
+		data = [cha.row for cha in self.CHALLENGES.values() ]
+		if get_boolean("Descendent order?"):
+			data.reverse()
+
+		# Write data back to the CSV
+		with open(self.chacsv, mode='w', newline='', encoding='latin1') as file:
+			if data:
+				# Use the keys of the first row as headers
+				fieldnames = data[0].keys()
+				writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';', extrasaction='ignore')
+				writer.writeheader()
+				writer.writerows(data)
 		print(".csv guardado.")
 
 	def write_status(self):
@@ -581,13 +594,20 @@ class ChallengeSystem:
 		super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
 		for num, cha in enumerate( sorted( self.CHALLENGES.values(),reverse=True ) , start=1):
 			if num == 1:
-				ChallengeSystem.rename_folder("torename", cha.replays_folder_name, compress=False)
+				ChallengeSystem.rename_folder("torename", cha.replays_dir.stem, compress=False)
 				print(cha)
 			super_string += str(cha)
 		
 		with open(self.chalog, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
+			
+			
+	def get_challenge(self):
+		print("About to send a embed post webhook to Chlng|Updates: ")
+		min=1
+		max=len(self.CHALLENGES)
+		return self.CHALLENGES[get_int(f"Write ID challenge ID (min: {min}, max:{max}): ", min=min, max=max)]
 
 	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
 		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
@@ -606,8 +626,8 @@ class ChallengeSystem:
 		if self.chacsv.exists() and self.chacsv.stat().st_size > 0:
 			with open(self.chacsv, mode='r', encoding='latin1') as file:
 				reader = csv.DictReader(file, delimiter=';')
-				rows = list(reader)  # Read all rows into a list
-				for row in reversed(rows):  # Iterate over the rows in reverse order
+				rows = sorted(reader, key=lambda row: int(row['key']))
+				for row in rows:
 					key = int(row['key'])
 					dataaaa[key] = ChallengeEvent(self, key, row)
 		return dataaaa
@@ -650,14 +670,12 @@ SISTEMA = ChallengeSystem(
 	chacsv = Path.cwd() / r"data\challenges.csv",
 	chalog = Path.cwd() / r"output\challenges.log",
 	status = Path.cwd() / r"output\status.log",
-	write_log = False,
-	write_csv = False,
-	write_status = False
 )
 	
 if __name__ == "__main__":
 	SISTEMA.write_chalog();
 	SISTEMA.write_status();
+	# SISTEMA.write_csv();
 	
 	
 	"""4. Consultas functions"""
