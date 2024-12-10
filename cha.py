@@ -266,9 +266,7 @@ class ChallengeEvent:
 			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
 
 	def __post_no_score_mode(self, discord_message, webhook_url):
-		embed = {
-			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
-			"title": "A new Challenge has been registered!",
+		embed = self.embed | {
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
 					"name": f"Challenge № {self.key}",
@@ -299,8 +297,6 @@ class ChallengeEvent:
 					"value": f"```diff\n{self.top10}```",
 					"inline": False
 				}],
-			"timestamp": datetime.utcnow().isoformat(),
-			"footer": {"text": "Let the challenges continue!"},
 		}
 		if self.notes:
 			embed["fields"].insert(-2,{
@@ -315,9 +311,7 @@ class ChallengeEvent:
 		return requests.post(webhook_url, json=payload)
 		
 	def __post_kick_add_mode(self, discord_message, webhook_url):
-		embed = {
-			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
-			"title": "A new Challenge has been registered!",
+		embed = self.embed | {
 			"description": f"A player has been kicked from the list!.\n",
 			"fields": [{
 					"name": f"Challenge № {self.key}",
@@ -350,8 +344,6 @@ class ChallengeEvent:
 					"inline": False
 				}
 			],
-			"timestamp": datetime.utcnow().isoformat(),
-			"footer": {"text": "Let the challenges continue!"},
 		}
 		if self.notes:
 			embed["fields"].insert(-2,{
@@ -376,10 +368,7 @@ class ChallengeEvent:
 		)
 		if response.status_code != 200:
 			return response
-
-		embed = {
-			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
-			"title": "A new Challenge has been registered!",
+		embed = self.embed | {
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
 					"name": f"Challenge № {self.key}",
@@ -416,8 +405,6 @@ class ChallengeEvent:
 					"inline": False
 				}
 			],
-			"timestamp": datetime.utcnow().isoformat(),
-			"footer": {"text": "Let the challenges continue!"},
 		}
 		webhook_message = response.json()
 		message_id = webhook_message["id"]
@@ -432,6 +419,15 @@ class ChallengeEvent:
 		)
 
 	###--------------------------properties----------------------###
+	@cached_property
+	def embed(self):
+		return {
+			"color": 0x5DD9DF if self.is_normal_mode else 0x981D98 if self.is_kick_add_mode else 0xFFA500,
+			"title": "A new Challenge has been registered!",
+			"timestamp": datetime.utcnow().isoformat(),
+			"footer": {"text": "Let the challenges continue!"},
+		}
+	
 	@cached_property
 	def winner(self):
 		return self.player1 if (self.player1.wins > self.player2.wins or not self.is_normal_mode) else self.player2
@@ -724,6 +720,5 @@ if __name__ == "__main__":
 	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
-	ic(sys.argv)
 	"""1. SendToChlngUpdates"""
 	SISTEMA.get_challenge(sys.argv).post(sys.argv, webhook_url="https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA")
