@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-import pandas as pd
+# import pandas as pd
 from icecream import ic
 import json
 import py7zr
@@ -163,18 +163,19 @@ class ChallengeEvent:
 	
 	###--------------------------Public.Methods-----------------------###
 	def send_as_webhook(self, webhook_url):
-		if self.replays:
-			with open(self.replays, "rb") as file:
-				files = {"file": file}
-				response = requests.post(
-					webhook_url,
-					data={"content": self.message},
-					files=files
-				)
+		if self.is_normal_mode and not self.replays:
+			raise Exception(f"Not sending a shit without replays: Missing {self.replays.name}")
+		with open(self.replays, "rb") as file:
+			files = {"file": file}
+			response = requests.post(
+				webhook_url,
+				data={"content": self.discord_message},
+				files=files
+			)
 		else:
 			response = requests.post(
 				webhook_url,
-				json={"content": self.message, "embeds": [self.embed]}
+				json={"content": self.discord_message, "embeds": [self.embed]}
 			)
 
 		if response.status_code != 200 and response.status_code != 204:
@@ -187,7 +188,7 @@ class ChallengeEvent:
 			webhook_url_edit = f"{webhook_url}/messages/{message_id}"
 
 			edit_payload = {
-				"content": self.message,
+				"content": self.discord_message,
 				"embeds": [self.embed]
 			}
 
@@ -203,7 +204,7 @@ class ChallengeEvent:
     
 	def send_to_chlng_updates1(self):
 		payload = {
-			"content": self.message,
+			"content": self.discord_message,
 			"embeds": [self.embed],  # Must be a list of embed dictionaries
 		}
 		files = {"file": open(self.replays, "rb")} if self.replays else None
@@ -217,9 +218,60 @@ class ChallengeEvent:
 		return success_status
 
 	###--------------------------Private.Methods-----------------------###
+	def __01_asegurar_row_integrity(self):
+		if not self.is_normal_mode and self.games_total:
+			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
+		
+	def __02_set_player_records(self):
+		if self.is_normal_mode:
+			self.winner.history.set_records(self)
+			self.loser.history.set_records(self)
+			
+	def __03_set_player_ranks(self):
+		if self.challenger is self.winner:
+			for player in self.chasys.PLAYERS.values():
+				player.set_rank(self)	
+			
+	def __04_freeze_current_top_10_string(self):
+		top_10_as_dict = {
+			player.rank: player
+			for player in self.chasys.PLAYERS.values()
+			if 1 <= player.rank <= 10
+		}
+		self.top10 = "\t\tTOP 10\n"
+		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
+			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
+
+
+		
+		
+	def get_01_challenge_message(self):
+		string = (
+			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
+			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
+		)
+		if self.games2v2:
+			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+		return string
+		
+	def get_02_score(self):
+		string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+		if self.games2v2:(
+			string += f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+				f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+			)
+		return string
+
+	def get_03_defense_or_takeover_message(self):
+		flawlessly = "flawlessly " if self.loser.wins == 0 else "":
+		if self.defender is self.winner:
+			return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
+		else:
+			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
+	###--------------------------properties----------------------###
 	
 	@cached_property
-	def message(self):
+	def discord_message(self):
 		return "📢 **Challenge Update!** A new match result is in! Check out the details below."
 	
 	@cached_property
@@ -229,7 +281,7 @@ class ChallengeEvent:
 		# Preformatted top 10 leaderboard table
 		top10_table = f"```diff\n{self.top10}```"
 
-		# Message content based on modes
+		# discord_message content based on modes
 		if self.is_no_score_mode:
 			scores_message = "No score mode active. Scores not tracked."
 		elif self.is_kick_add_mode:
@@ -292,31 +344,6 @@ class ChallengeEvent:
 		return embed
 
 
-	def __01_asegurar_row_integrity(self):
-		if not self.is_normal_mode and self.games_total:
-			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
-		
-	def __02_set_player_records(self):
-		if self.is_normal_mode:
-			self.winner.history.set_records(self)
-			self.loser.history.set_records(self)
-			
-	def __03_set_player_ranks(self):
-		if self.challenger is self.winner:
-			for player in self.chasys.PLAYERS.values():
-				player.set_rank(self)	
-			
-	def __04_freeze_current_top_10_string(self):
-		top_10_as_dict = {
-			player.rank: player
-			for player in self.chasys.PLAYERS.values()
-			if 1 <= player.rank <= 10
-		}
-		self.top10 = "\t\tTOP 10\n"
-		for rank, player in sorted(top_10_as_dict.items(), reverse=True):
-			self.top10 += f"\t{rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-
-	###--------------------------properties----------------------###
 	@cached_property
 	def winner(self):
 		return self.player1 if (self.player1.wins > self.player2.wins or not self.is_normal_mode) else self.player2
@@ -377,7 +404,7 @@ class ChallengeEvent:
 		# }
 		
 
-
+	
 
 			
 	
@@ -389,77 +416,50 @@ class ChallengeEvent:
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 		
 	def __str__(self):
-		# Helper methods for clarity
-		def get_mode_description():
-			if self.games2v2:
-				return "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-			return ""
+		def build_03_kick_add_report(self):
+			return (
+				f"\n\nAddAndKickUpdate: Since Challenge {self.defender.previous_challenge.key}, "
+				f"{self.defender.history.name} has not played any game or challenge "
+				f"in the last {self.defender.days_since_last_chall} days."
+				f"\n\n- {self.defender.history.name} has been kicked "
+				f"from the {self.defender.rank_ordinal} spot and from the list."
+				f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
+				f"{self.custom_msg}"
+				f"\n\nNo wins or losses have been scored."
+			)
+			
+		def build_02_no_score_report(self):
+			return (
+				f"{self.get_01_challenge_message()}"
+				f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
+				f"\n\n+ {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
+				f"{self.custom_msg}"
+				f"\n\nNo wins or losses have been scored."
+			)
 
-		def get_02_score_1v1():
-			if self.games1v1:
-				return f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-			return ""
-
-		def get_03_score_2v2():
-			if self.games2v2:
-				return (
-					f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
-					f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-				)
-			return ""
-
-		def get_04_add_and_kick_message():
-			if self.is_kick_add_mode:
-				since_last_event = f'Since Challenge {self.defender.previous_challenge.key}'
-				return (
-					f"\n\nAddAndKickUpdate: {since_last_event}, {self.defender.history.name} has not played any game "
-					f"or challenge in {self.defender.days_since_last_chall} days."
-					f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list."
-				)
-			if self.is_no_score_mode:
-				return f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
-			return ""
-
-		def get_01_challenge_message():
-			if not self.is_kick_add_mode:
-				return (
-					f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
-					f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
-					f"{get_mode_description()}"
-				)
-			return ""
-
-		def get_06_version_message():
-			if self.games_total:
-				return f"Games were played in {self.version}"
-			return "No wins or losses have been scored."
-
-		def get_05_defense_or_takeover_message():
-			if self.is_kick_add_mode:
-				return f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
-
-			flawless = "flawlessly " if self.loser.wins == 0 and not self.is_no_score_mode and not self.is_kick_add_mode else ""
-			if self.defender is self.winner:
-				return f"\n\n+ {self.defender.history.name} has {flawless}defended the {self.defender.rank_ordinal} spot!"
-			return f"\n\n+ {self.challenger.history.name} has {flawless}taken over the {self.defender.rank_ordinal} spot!"
-
-		# Assembling the message
+		def build_01_normal_report(self):
+			return (
+				f"{self.get_01_challenge_message()}"
+				f"{self.get_02_score()}"
+				f"{self.get_03_defense_or_takeover_message()}"
+				f"{self.custom_msg}"
+				f"\n\nGames were played in {self.version}"
+			)
+			
 		return (
-			f"\n------------------------------------\n{self.replays_folder_name}\n```diff\n"
-			f"\n- Challenge № {self.key}\n- Update {self.dateString}"
-			f"{get_01_challenge_message()}"
-			f"{get_02_score_1v1()}"
-			f"{get_03_score_2v2()}"
-			f"{get_04_add_and_kick_message()}"
-			f"{get_05_defense_or_takeover_message()}"
-			f"{self.custom_msg}"
-			f"\n\n{get_06_version_message()}"
+			"\n------------------------------------"
+			f"\n{self.replays_folder_name}"
+			"\n```diff\n"
+			f"\n- Challenge № {self.key}"
+			f"\n- Update {self.dateString}"
+			{
+				build_03_kick_add_report() is self.is_kick_add_mode 
+				else build_02_no_score_report() if self.is_no_score_mode 
+				else build_01_normal_report()
+			}
 			f"\n\nLet the challenges continue!"
 			f"\n\n{self.top10}```"
 		)
-
-
-
 
 
 
