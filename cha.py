@@ -201,18 +201,35 @@ class ChallengeEvent:
 
 	
 	###--------------------------Public.Methods-----------------------###
-	def send_as_webhook(self, webhook_url):
-		if self.is_normal_mode and not self.replays_dir.exists():
+	def post(self, webhook_url):
+		if not get_boolean("\tSend a embed post webhook to Chlng|Updates?"):
+			return
+		if self.is_normal_mode:
+			return self.post_normal_mode(webhook_url)
+		elif self.is_no_score_mode:
+			return self.post_no_score_mode(webhook_url)
+		elif self.is_kick_add_mode:
+			return self.post_kick_add_mode(webhook_url)
+		
+		
+		
+		
+	def post_no_score_mode(self, webhook_url):
+		raise NotImplementedError()
+		
+	def post_kick_add_mode(self, webhook_url):
+		raise NotImplementedError()
+		
+		
+	def post_normal_mode(self, webhook_url):
+		if not self.replays_dir.exists():
 			raise Exception(f"Im not sending a shit without replays: Missing {self.replays_dir}")
-			
 		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
-		with open(self.replays_dir, "rb") as file:
-			response = requests.post(
-				webhook_url,
-				data={"content": discord_message},
-				files={"file": file}
-			)
-
+		response = requests.post(
+			webhook_url,
+			data={"content": discord_message},
+			files={"file": open(self.replays_dir, "rb")}
+		)
 		if response.status_code != 200 and response.status_code != 204:
 			return f"Failed to send initial webhook: {response.status_code} - {response.text}"
 
@@ -220,18 +237,15 @@ class ChallengeEvent:
 			webhook_message = response.json()
 			message_id = webhook_message["id"]
 			webhook_url_edit = f"{webhook_url}/messages/{message_id}"
-
 			edit_payload = {
 				"content": discord_message,
 				"embeds": [self.embed]
 			}
-
 			edit_response = requests.patch(
 				webhook_url_edit,
 				json=edit_payload
 			)
-
-			if edit_response.status_code not in (200, 204):
+			if edit_response.status_code not in {200, 204}:
 				return f"Failed to edit webhook message: {edit_response.status_code} - {edit_response.text}"
 
 		return "Webhook sent successfully!"
@@ -258,31 +272,6 @@ class ChallengeEvent:
 			self.top10 += f"\t{player.rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 
 
-		
-		
-	def get_01_challenge_message(self):
-		string = (
-			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
-			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
-		)
-		if self.games2v2:
-			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-		return string
-		
-	def get_02_score(self):
-		string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-		if self.games2v2:
-			string += (f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
-				f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-			)
-		return string
-
-	def get_03_defense_or_takeover_message(self):
-		flawlessly = "flawlessly " if self.loser.wins == 0 else ""
-		if self.defender is self.winner:
-			return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
-		else:
-			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
 	###--------------------------properties----------------------###
 	
 	@cached_property
@@ -409,6 +398,31 @@ class ChallengeEvent:
 
 			
 	
+	###--------------------------private-----------------------###
+	def get_01_challenge_message(self):
+		string = (
+			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
+			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
+		)
+		if self.games2v2:
+			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+		return string
+		
+	def get_02_score(self):
+		string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+		if self.games2v2:
+			string += (f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+				f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+			)
+		return string
+
+	def get_03_defense_or_takeover_message(self):
+		flawlessly = "flawlessly " if self.loser.wins == 0 else ""
+		if self.defender is self.winner:
+			return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
+		else:
+			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
+			
 	###--------------------------Public.dundermethod-----------------------###
 	def __lt__(self, other):
 		return self.key < other.key
@@ -570,10 +584,9 @@ class ChallengeSystem:
 			
 			
 	def get_challenge(self):
-		print("About to send a embed post webhook to Chlng|Updates: ")
 		min=1
 		max=len(self.CHALLENGES)
-		return self.CHALLENGES[get_int(f"Write ID challenge ID (min: {min}, max:{max}): ", min=min, max=max)]
+		return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", min=min, max=max)]
 
 	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
 		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
@@ -651,5 +664,5 @@ if __name__ == "__main__":
 	
 	
 	"""1. SendToChlngUpdates"""
-	SISTEMA.get_challenge().send_as_webhook(webhook_url="https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA")
-
+	SISTEMA.get_challenge().post(webhook_url="https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA")
+	# ic(SISTEMA.get_challenge().embed)
