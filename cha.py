@@ -202,33 +202,27 @@ class ChallengeEvent:
 	
 	###--------------------------Public.Methods-----------------------###
 	def send_as_webhook(self, webhook_url):
-		if self.is_normal_mode and not self.replays_dir_str:
-			raise Exception(f"Not sending a shit without replays: Missing {self.replays_dir}")
+		if self.is_normal_mode and not self.replays_dir.exists():
+			raise Exception(f"Im not sending a shit without replays: Missing {self.replays_dir}")
 			
+		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
 		with open(self.replays_dir, "rb") as file:
-			files = {"file": file}
 			response = requests.post(
 				webhook_url,
-				data={"content": self.discord_message},
-				files=files
+				data={"content": discord_message},
+				files={"file": file}
 			)
-		# else:
-			# response = requests.post(
-				# webhook_url,
-				# json={"content": self.discord_message, "embeds": [self.embed]}
-			# )
 
 		if response.status_code != 200 and response.status_code != 204:
 			return f"Failed to send initial webhook: {response.status_code} - {response.text}"
 
-		# Step 2: Edit the message to include the embed
-		if self.replays_dir_str and response.status_code == 200:
+		if response.status_code == 200:
 			webhook_message = response.json()
 			message_id = webhook_message["id"]
 			webhook_url_edit = f"{webhook_url}/messages/{message_id}"
 
 			edit_payload = {
-				"content": self.discord_message,
+				"content": discord_message,
 				"embeds": [self.embed]
 			}
 
@@ -241,21 +235,6 @@ class ChallengeEvent:
 				return f"Failed to edit webhook message: {edit_response.status_code} - {edit_response.text}"
 
 		return "Webhook sent successfully!"
-    
-	def send_to_chlng_updates1(self):
-		payload = {
-			"content": self.discord_message,
-			"embeds": [self.embed],  # Must be a list of embed dictionaries
-		}
-		files = {"file": open(self.replays_dir_str, "rb")} if self.replays_dir_str else None
-		response = requests.post(webhook_url, json=payload, files=files)
-		
-		if response.status_code == 204:
-			success_status = "Webhook sent successfully!"
-		else:
-			success_status = f"Failed to send webhook: {response.status_code} - {response.text}"
-		
-		return success_status
 
 	###--------------------------Private.Methods-----------------------###
 	def __01_asegurar_row_integrity(self):
@@ -307,17 +286,11 @@ class ChallengeEvent:
 	###--------------------------properties----------------------###
 	
 	@cached_property
-	def discord_message(self):
-		return "📢 **Challenge Update!** A new match result is in! Check out the details below."
-	
-	@cached_property
 	def embed(self):
 		embed_color = 0x4CAF50 if self.winner else 0xF44336  # Color based on win or loss
 
-		# Preformatted top 10 leaderboard table
 		top10_table = f"```diff\n{self.top10}```"
 
-		# discord_message content based on modes
 		if self.is_no_score_mode:
 			scores_message = "No score mode active. Scores not tracked."
 		elif self.is_kick_add_mode:
@@ -423,13 +396,6 @@ class ChallengeEvent:
 	@cached_property
 	def replays_dir(self):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
-		
-	@cached_property
-	def replays_dir_str(self):
-		if self.replays_dir.exists():
-			return str(self.replays_dir)
-		else:
-			return None
 		
 	# @cached_property
 	# def players_involved(self):
