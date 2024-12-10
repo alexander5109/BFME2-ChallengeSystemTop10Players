@@ -283,7 +283,71 @@ class ChallengeEvent:
 			print(f"Failed to send webhook: {response.status_code} - {response.text}")
 		
 	def post_kick_add_mode(self, discord_message, webhook_url):
-		raise NotImplementedError("wait")
+		embed = {
+			"color":  0x4CAF50 if self.challenger is self.winner else 0xF44336,
+			"title": "A new Challenge event has been registered!",
+			"description": f"A player has been kicked from the list!.\n",
+			"fields": [
+				{
+					"name": f"Challenge № {self.key}",
+					"value": (
+						f"- **Added player**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
+						f"\n- **Kicked player**: {self.defender.history.name} ({self.defender.rank_ordinal})"
+						f"\n- **Update Time**: {self.dateString}"
+					),
+					"inline": False
+				},
+				{
+					"name": "Inactive players cleaning",
+					"value": (
+						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
+					),
+					"inline": False
+				},
+				{
+					"name": "Outcome",
+					"value": (
+						f"- **{self.defender.history.name}** has been kicked from the {self.defender.rank_ordinal} spot and from the list."
+						f"\n- **{self.challenger.history.name}** has been added to the top10 list, starting in the 10th spot."
+					),
+					"inline": False
+				},
+				{
+					"name": "Scores",
+					"value": "- No wins or losses have been scored.",
+					"inline": False
+				},
+				{
+					"name": "Let the Challenges Continue!",
+					"value": f"```diff\n{self.top10}```",
+					"inline": False
+				}
+			],
+			"timestamp": datetime.utcnow().isoformat(),
+			"footer": {"text": "Let the challenges continue!"},
+		}
+		if self.notes:
+			embed["fields"].insert(-2,{
+				"name": "Notes: ",
+				"value": f"- {self.notes}",
+				"inline": False
+			})
+		
+		
+		
+		headers = {
+			"Content-Type": "application/json"
+		}
+		payload = {
+			"content": discord_message,
+			"embeds": [embed]
+		}
+		response = requests.post(webhook_url, json=payload)
+		
+		if response.status_code == 204:
+			print("Webhook sent successfully!")
+		else:
+			print(f"Failed to send webhook: {response.status_code} - {response.text}")
 		
 		
 		
@@ -485,11 +549,9 @@ class ChallengeEvent:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		def build_03_kick_add_report():
 			return (
-				f"\n\nAddAndKickUpdate: Since Challenge {self.defender.previous_challenge.key}, "
-				f"{self.defender.history.name} has not played any game or challenge "
-				f"in {self.defender.days_since_last_chall} days."
-				f"\n\n- {self.defender.history.name} has been kicked "
-				f"from the {self.defender.rank_ordinal} spot and from the list."
+				f"\n\nAddAndKickUpdate: "
+				f"Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
+				f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list."
 				f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
 				f"{commment_line}"
 				f"\n\nNo wins or losses have been scored."
