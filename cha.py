@@ -3,11 +3,24 @@ from pathlib import Path
 # import pandas as pd
 from icecream import ic
 import json
-import py7zr
+# import py7zr
 from functools import cached_property
 from bidict import bidict
 import requests
-    
+import csv
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     
     
 #-------------------------------------------------------------------------------------------------------------#
@@ -151,7 +164,7 @@ class ChallengeEvent:
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
-		self.custom_msg = f"\n\n\tComment: {row['message']}" if pd.notna(row['message']) and row['message'] else ""
+		self.custom_msg = f"\n\n\tComment: {row['message']}" if row['message'] else ""
 		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
 		
@@ -165,6 +178,7 @@ class ChallengeEvent:
 	def send_as_webhook(self, webhook_url):
 		if self.is_normal_mode and not self.replays:
 			raise Exception(f"Not sending a shit without replays: Missing {self.replays.name}")
+			
 		with open(self.replays, "rb") as file:
 			files = {"file": file}
 			response = requests.post(
@@ -172,11 +186,11 @@ class ChallengeEvent:
 				data={"content": self.discord_message},
 				files=files
 			)
-		else:
-			response = requests.post(
-				webhook_url,
-				json={"content": self.discord_message, "embeds": [self.embed]}
-			)
+		# else:
+			# response = requests.post(
+				# webhook_url,
+				# json={"content": self.discord_message, "embeds": [self.embed]}
+			# )
 
 		if response.status_code != 200 and response.status_code != 204:
 			return f"Failed to send initial webhook: {response.status_code} - {response.text}"
@@ -256,14 +270,14 @@ class ChallengeEvent:
 		
 	def get_02_score(self):
 		string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-		if self.games2v2:(
-			string += f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+		if self.games2v2:
+			string += (f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
 				f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
 			)
 		return string
 
 	def get_03_defense_or_takeover_message(self):
-		flawlessly = "flawlessly " if self.loser.wins == 0 else "":
+		flawlessly = "flawlessly " if self.loser.wins == 0 else ""
 		if self.defender is self.winner:
 			return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
 		else:
@@ -416,11 +430,11 @@ class ChallengeEvent:
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 		
 	def __str__(self):
-		def build_03_kick_add_report(self):
+		def build_03_kick_add_report():
 			return (
 				f"\n\nAddAndKickUpdate: Since Challenge {self.defender.previous_challenge.key}, "
 				f"{self.defender.history.name} has not played any game or challenge "
-				f"in the last {self.defender.days_since_last_chall} days."
+				f"in {self.defender.days_since_last_chall} days."
 				f"\n\n- {self.defender.history.name} has been kicked "
 				f"from the {self.defender.rank_ordinal} spot and from the list."
 				f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
@@ -428,7 +442,7 @@ class ChallengeEvent:
 				f"\n\nNo wins or losses have been scored."
 			)
 			
-		def build_02_no_score_report(self):
+		def build_02_no_score_report():
 			return (
 				f"{self.get_01_challenge_message()}"
 				f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
@@ -437,7 +451,7 @@ class ChallengeEvent:
 				f"\n\nNo wins or losses have been scored."
 			)
 
-		def build_01_normal_report(self):
+		def build_01_normal_report():
 			return (
 				f"{self.get_01_challenge_message()}"
 				f"{self.get_02_score()}"
@@ -452,11 +466,11 @@ class ChallengeEvent:
 			"\n```diff\n"
 			f"\n- Challenge № {self.key}"
 			f"\n- Update {self.dateString}"
-			{
-				build_03_kick_add_report() is self.is_kick_add_mode 
+			f"{
+				build_03_kick_add_report() if self.is_kick_add_mode 
 				else build_02_no_score_report() if self.is_no_score_mode 
 				else build_01_normal_report()
-			}
+			}"
 			f"\n\nLet the challenges continue!"
 			f"\n\n{self.top10}```"
 		)
@@ -472,29 +486,36 @@ class PlayerInChallenge:
 	def __init__(self, challenge, key, wins1v1, wins2v2):
 		self.key = key
 		self.challenge = challenge
-		self.wins1v1 = wins1v1
-		self.wins2v2 = wins2v2
-		self.wins = wins1v1 + wins2v2
-		self.history = self.challenge.chasys.PLAYERS[key]
+		self.wins1v1 = int(wins1v1)
+		self.wins2v2 = int(wins2v2)
+		self.__01_freeze_current_history()
 		self.history.challenges.append(self.challenge)
-		self.rank = self.history.rank
 			
 			
 			
 	###--------------------------Public.Properties-----------------------###
+	def __01_freeze_current_history(self):
+		self.rank = self.history.rank
+		self.wins = self.wins1v1 + self.wins2v2
+		
+		
+		
+	@cached_property
+	def previous_challenge(self):
+		return self.history.challenges[self.history.challenges.index(self.challenge)-1]
+		
+	@cached_property
+	def days_since_last_chall(self):
+		return (self.challenge.date - self.previous_challenge.date).days
+	
+	@cached_property
+	def history(self):
+		return self.challenge.chasys.PLAYERS[self.key]
+		
 	@cached_property
 	def rank_ordinal(self):
 		ordinal = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th"}
 		return ordinal.get(self.rank, "from outside the list")
-		
-	@cached_property
-	def previous_challenge(self):
-		previous_index = self.history.challenges.index(self.challenge)-1
-		return self.history.challenges[previous_index]
-	
-	@cached_property
-	def days_since_last_chall(self):	
-		return (self.challenge.date - self.previous_challenge.date).days
 		
 	###--------------------------Public.dundermethod-----------------------###
 	def __repr__(self):
@@ -518,12 +539,11 @@ class ChallengeSystem:
 		self.chacsv = chacsv
 		self.chalog = chalog
 		self.status = status
-		self.__do_01_read_csv()
 		
 		
 		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
 		self.PLAYERS = { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
-		self.CHALLENGES = { key: ChallengeEvent(self, key, row) for key, row  in self.data.iterrows() }
+		self.CHALLENGES = self.read_CHALLENGES()
 		if write_log:
 			self.write_chalog()
 		if write_csv:
@@ -535,15 +555,15 @@ class ChallengeSystem:
 	def get_challenge(self):
 		while True:
 			ingreso = input("Send a challenge to Chlng|Updates using Challenge webhook as embeded msg? Write the ID challenge ID: ")
-			if not input.isnumeric():
+			if not ingreso.isnumeric():
 				print("Must to be number")
 				continue
 			ingreso = int(ingreso)
-			if not instance := self.CHALLENGES.get(ingreso)
+			if instance := self.CHALLENGES.get(ingreso):
+				return instance
+			else:
 				print("Challenge Nº{ingreso} is not loged")
 				continue
-			else:
-				return instance
 	
 	def write_csv(self, reverse):
 		if reverse:
@@ -581,24 +601,27 @@ class ChallengeSystem:
 
 	
 	###--------------------------Private.Methods-----------------------###
-	def __do_01_read_csv(self):
-		if self.chacsv.exists() and self.chacsv.stat().st_size >0 :
-			self.data = pd.read_csv(self.chacsv, sep = ";", encoding = "latin1")
-		else:
-			self.data = pd.DataFrame(columns=['key','version','p1','p1wins1v1','p1wins2v2','p2','p2wins1v1','p2wins2v2','date'])
-		self.data.set_index('key', inplace=True)
-		self.data.sort_index(inplace=True, ascending=True)
+	def read_CHALLENGES(self):
+		dataaaa = {}
+		if self.chacsv.exists() and self.chacsv.stat().st_size > 0:
+			with open(self.chacsv, mode='r', encoding='latin1') as file:
+				reader = csv.DictReader(file, delimiter=';')
+				rows = list(reader)  # Read all rows into a list
+				for row in reversed(rows):  # Iterate over the rows in reverse order
+					key = int(row['key'])
+					dataaaa[key] = ChallengeEvent(self, key, row)
+		return dataaaa
 
 	###------------------------------Statics-----------------------###
-	@staticmethod
-	def compress_folder(folder_path):
-		if folder_path.exists():
-			if not folder_path.is_dir():
-				raise ValueError("Input path must be a directory.")
-			archive_path = folder_path.with_suffix(".7z")
-			with py7zr.SevenZipFile(archive_path, 'w') as archive:
-				archive.writeall(folder_path)
-			print(f"* {folder_path.name} was 7ziped")
+	# @staticmethod
+	# def compress_folder(folder_path):
+		# if folder_path.exists():
+			# if not folder_path.is_dir():
+				# raise ValueError("Input path must be a directory.")
+			# archive_path = folder_path.with_suffix(".7z")
+			# with py7zr.SevenZipFile(archive_path, 'w') as archive:
+				# archive.writeall(folder_path)
+			# print(f"* {folder_path.name} was 7ziped")
 
 
 	@staticmethod
@@ -608,8 +631,8 @@ class ChallengeSystem:
 		if existing.exists() and not ideal.exists():
 			existing.rename(ideal)
 			print(f"* {torename} was renamed to {ideal.name}")
-		if compress:
-			ChallengeSystem.compress_folder(ideal)
+		# if compress:
+			# ChallengeSystem.compress_folder(ideal)
 			
 			
 		
