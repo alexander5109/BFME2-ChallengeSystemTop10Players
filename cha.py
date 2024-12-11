@@ -364,13 +364,17 @@ class ChallengeEvent:
 			)
 		embed = self.embed | {
 			# "description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
-			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
+			"description": (
+				"```diff\n"
+				f"- Challenge № {self.key}\n"
+				f"- Update {self.dateString}\n"
+				"```"
+			),
 			"fields": [{
-					"name": f"Challenge № {self.key}",
+					"name": "Players",
 					"value": (
-						f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
-						f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Registed Date**: {self.dateString}"
+						f"- Challenger: **{self.challenger.history.name}** ({self.challenger.rank_ordinal})"
+						f"\n- Defender: **{self.defender.history.name}** ({self.defender.rank_ordinal})"
 					),
 					"inline": False
 				},{
@@ -381,7 +385,7 @@ class ChallengeEvent:
 					"name": "Outcome",
 					"value": (
 						"```diff\n"
-						f"+ {self.winner.history.name} {'flawlessly ' if self.loser.wins == 0 else ''} {'defended' if self.defender is self.winner else 'has taken over'} the {self.defender.rank_ordinal} spot!\n"
+						f"+ {self.winner.history.name} {'flawlessly ' if self.loser.wins == 0 else ''}{'defended' if self.defender is self.winner else 'has taken over'} the {self.defender.rank_ordinal} spot!\n"
 						"```"
 					),
 					"inline": False
