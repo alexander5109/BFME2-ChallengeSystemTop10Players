@@ -353,8 +353,10 @@ class ChallengeEvent:
 		
 		
 	def __post_normal_mode(self, discord_message):
-		if not self.replays_dir.exists():
-			raise Exception(f"Im not sending a shit without replays: Missing {self.replays_dir}")
+		
+		while not self.replays_dir.exists():
+			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n\tDo you want to make sure to rename replays accordingly and try again?"):
+				sys.exit("Ok bye")
 		response = requests.post(
 			self.chasys.webhook_url,
 			data={"content": discord_message},
@@ -668,7 +670,7 @@ class ChallengeSystem:
 		min=1
 		max=len(self.CHALLENGES)
 		if hint is None:
-			return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", indent=1, min=min, max=max)]
+			return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", indent=0, min=min, max=max)]
 		elif result:= self.CHALLENGES.get(hint):
 			return result
 		else:
