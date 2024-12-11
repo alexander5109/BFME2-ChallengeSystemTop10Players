@@ -261,13 +261,11 @@ class ChallengeEvent:
 
 	def __post_no_score_mode(self, discord_message):
 		embed = self.embed | {
-			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
-					"name": f"Challenge № {self.key}",
+					"name": "Players",
 					"value": (
-						f"- **Challenger**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
-						f"\n- **Defender**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Registered Date**: {self.dateString}"
+						f"- Challenger: **{self.challenger.history.name} ({self.challenger.rank_ordinal})**"
+						f"\n- Defender: **{self.defender.history.name} ({self.defender.rank_ordinal})**"
 					),
 					"inline": False
 				},{
@@ -291,8 +289,8 @@ class ChallengeEvent:
 		}
 		if self.notes:
 			embed["fields"].insert(-2,{
-				"name": "Notes: ",
-				"value": f"- {self.notes}",
+				"name": "Comments: ",
+				"value": f"*- {self.notes}*",
 				"inline": False
 			})
 		payload = {
@@ -303,9 +301,8 @@ class ChallengeEvent:
 		
 	def __post_kick_add_mode(self, discord_message):
 		embed = self.embed | {
-			"description": f"A player has been kicked from the list!.\n",
 			"fields": [{
-					"name": f"Challenge № {self.key}",
+					"name": "Kick-Add Update",
 					"value": (
 						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
 					),
@@ -332,8 +329,8 @@ class ChallengeEvent:
 		}
 		if self.notes:
 			embed["fields"].insert(-2,{
-				"name": "Notes: ",
-				"value": f"- {self.notes}",
+				"name": "Comments: ",
+				"value": f"*- {self.notes}*",
 				"inline": False
 			})
 		payload = {
@@ -363,18 +360,11 @@ class ChallengeEvent:
 				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
 			)
 		embed = self.embed | {
-			# "description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
-			"description": (
-				"```diff\n"
-				f"- Challenge № {self.key}\n"
-				f"- Update {self.dateString}\n"
-				"```"
-			),
 			"fields": [{
 					"name": "Players",
 					"value": (
-						f"- Challenger: **{self.challenger.history.name}** ({self.challenger.rank_ordinal})"
-						f"\n- Defender: **{self.defender.history.name}** ({self.defender.rank_ordinal})"
+						f"- Challenger: **{self.challenger.history.name} ({self.challenger.rank_ordinal})**"
+						f"\n- Defender: **{self.defender.history.name} ({self.defender.rank_ordinal})**"
 					),
 					"inline": False
 				},{
@@ -402,8 +392,8 @@ class ChallengeEvent:
 		}
 		if self.notes:
 			embed["fields"].insert(-2,{
-				"name": "Notes: ",
-				"value": f"- {self.notes}",
+				"name": "Comments: ",
+				"value": f"*- {self.notes}*",
 				"inline": False
 			})
 		webhook_message = response.json()
@@ -424,7 +414,12 @@ class ChallengeEvent:
 		return {
 			"color": 0x5DD9DF if self.is_normal_mode else 0x981D98 if self.is_kick_add_mode else 0xFFA500,
 			"title": "A new Challenge has been registered!",
-			# "timestamp": datetime.utcnow().isoformat(),
+			"description": (
+				"```diff\n"
+				f"- Challenge № {self.key}\n"
+				f"- Update {self.dateString}\n"
+				"```"
+			),
 			"timestamp": datetime.now(UTC).isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
