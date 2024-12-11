@@ -1,6 +1,5 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
-# import pandas as pd
 from icecream import ic
 import json
 # import py7zr
@@ -9,11 +8,8 @@ from bidict import bidict
 import requests
 import csv
 import sys
+import time
 	
-	
-# //----------argv--------------//
-	# python main.py 312
-	# python main.py 314 post
 	
 	
 	
@@ -202,23 +198,21 @@ class ChallengeEvent:
 
 	
 	###--------------------------Public.Methods-----------------------###
-	def post(self, argv, webhook_url):
-		if not (len(argv) >= 3 and argv[2] == "post"):
-			if not get_boolean(f"\tSend challenge Nº{self.key} to Chlng|Updates?"):
-				return
-			
+	def post(self, confirmed=False):
+		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
+			return
 		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
 		if self.is_normal_mode:
-			response = self.__post_normal_mode(discord_message, webhook_url)
+			response = self.__post_normal_mode(discord_message)
 		elif self.is_no_score_mode:
-			response = self.__post_no_score_mode(discord_message, webhook_url)
+			response = self.__post_no_score_mode(discord_message)
 		elif self.is_kick_add_mode:
-			response = self.__post_kick_add_mode(discord_message, webhook_url)
+			response = self.__post_kick_add_mode(discord_message)
 		
 		if response.status_code in {200, 204}:
-			print("Webhook sent successfully!")
+			print(f"Challenge Nº{self.key} successfully sent to Discord via the webhook!")
 		else:
-			print(f"Failed to send webhook: {response.status_code} - {response.text}")
+			print(f"Failed to send webhookof challenge Nº{self.key}: \n{response.status_code} - {response.text}")
 		
 	###--------------------------Private.Methods-----------------------###
 	def __01_asegurar_row_integrity(self):
@@ -265,7 +259,7 @@ class ChallengeEvent:
 		else:
 			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
 
-	def __post_no_score_mode(self, discord_message, webhook_url):
+	def __post_no_score_mode(self, discord_message):
 		embed = self.embed | {
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
@@ -308,9 +302,9 @@ class ChallengeEvent:
 			"content": discord_message,
 			"embeds": [embed]
 		}
-		return requests.post(webhook_url, json=payload)
+		return requests.post(self.chasys.webhook_url, json=payload)
 		
-	def __post_kick_add_mode(self, discord_message, webhook_url):
+	def __post_kick_add_mode(self, discord_message):
 		embed = self.embed | {
 			"description": f"A player has been kicked from the list!.\n",
 			"fields": [{
@@ -355,19 +349,26 @@ class ChallengeEvent:
 			"content": discord_message,
 			"embeds": [embed]
 		}
-		return requests.post(webhook_url, json=payload)
+		return requests.post(self.chasys.webhook_url, json=payload)
 		
 		
-	def __post_normal_mode(self, discord_message, webhook_url):
+	def __post_normal_mode(self, discord_message):
 		if not self.replays_dir.exists():
 			raise Exception(f"Im not sending a shit without replays: Missing {self.replays_dir}")
 		response = requests.post(
-			webhook_url,
+			self.chasys.webhook_url,
 			data={"content": discord_message},
 			files={"file": open(self.replays_dir, "rb")}
 		)
 		if response.status_code != 200:
 			return response
+			
+		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
+		if self.games2v2:
+			score += (
+				f"\n- **Score 2vs2**: {self.winner.wins2v2}-{self.loser.wins2v2} for **{self.winner.history.name}**"
+				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
+			)
 		embed = self.embed | {
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
@@ -380,19 +381,12 @@ class ChallengeEvent:
 					"inline": False
 				},{
 					"name": "Scores",
-					"value": (
-						f"Score 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-						f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
-						f"\nTotal Score: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-					),
+					"value": score,
 					"inline": False
 				},{
 					"name": "Outcome",
 					"value": (
-						f"+ {self.winner.history.name} "
-						f"{'flawlessly ' if self.loser.wins == 0 else ''}"
-						f"{'defended' if self.defender is self.winner else 'has taken over'} "
-						f"the **{self.defender.rank_ordinal}** spot!"
+						f"- **{self.winner.history.name}** {'flawlessly ' if self.loser.wins == 0 else ''} {'defended' if self.defender is self.winner else 'has taken over'} the **{self.defender.rank_ordinal}** spot!"
 					),
 					"inline": False
 				},{
@@ -408,7 +402,7 @@ class ChallengeEvent:
 		}
 		webhook_message = response.json()
 		message_id = webhook_message["id"]
-		webhook_url_edit = f"{webhook_url}/messages/{message_id}"
+		webhook_url_edit = f"{self.chasys.webhook_url}/messages/{message_id}"
 		edit_payload = {
 			"content": discord_message,
 			"embeds": [embed]
@@ -424,7 +418,8 @@ class ChallengeEvent:
 		return {
 			"color": 0x5DD9DF if self.is_normal_mode else 0x981D98 if self.is_kick_add_mode else 0xFFA500,
 			"title": "A new Challenge has been registered!",
-			"timestamp": datetime.utcnow().isoformat(),
+			# "timestamp": datetime.utcnow().isoformat(),
+			"timestamp": datetime.now(UTC).isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
 	
@@ -579,13 +574,15 @@ class PlayerInChallenge:
 #"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class ChallengeSystem:
-	def __init__(self, chareps, chacsv, chalog, status, player_data):
+	def __init__(self, chareps, chacsv, chalog, status, player_data, webhook_url):
 		self.chareps = chareps
 		self.chacsv = chacsv
 		self.chalog = chalog
 		self.status = status
+		self.webhook_url = webhook_url
 		self.PLAYERS = self.__read_PLAYERS(player_data)
 		self.CHALLENGES = self.__read_CHALLENGES()
+		
 		
 	###--------------------------Public.Methods-----------------------###
 	def write_csv(self):
@@ -621,28 +618,71 @@ class ChallengeSystem:
 		with open(self.chalog, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
+	
+	def send_all_posts(self, start_with):
+		if not start_with:
+			start_with = self.get_challenge().key
+		end_with = len(SISTEMA.CHALLENGES)
+		if not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{end_with} each 7 minutes"):
+			return
+		for chakey in range(start_with, end_with+1):
+			self.CHALLENGES[chakey].post(confirmed=True)
+			time.sleep(60*7)
 			
 			
-	def get_challenge(self, argv):
+	def __get_validated_argv_dict(self, argv):
+		argv_dict = {
+			"cha_id": None,
+			"post": None,
+			"post_all": None
+		}
+		if len(argv) > 2:
+			if argv[1].isnumeric():
+				cha_id = int(argv[1])
+				min = 1
+				max = len(self.CHALLENGES)
+				if min <= cha_id <= max:
+					argv_dict["cha_id"] = cha_id
+				else:
+					raise Exception(f"Challenge out of the range {min}-{max} range.")
+			else:
+				raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
+			if argv[2] not in argv_dict:
+				raise Exception(f"Wrong argv: {argv[2]} is not a valid method")
+			else:
+				argv_dict[argv[2]] = True
+		return argv_dict	
+			
+	def execute_argv_operations_if_any(self, argv):
+		if len(argv) == 1:
+			return
+		argv_dict = self.__get_validated_argv_dict(argv)
+		if argv_dict["post"]:
+			instance = self.CHALLENGES[argv_dict["cha_id"]]
+			instance.post()
+		elif argv_dict["post_all"]:
+			self.send_all_posts(argv_dict["cha_id"])
+			
+			
+	def get_challenge(self, hint=None):
 		min=1
 		max=len(self.CHALLENGES)
-		
-		if len(argv) > 1 and argv[1].isnumeric():
-			ingreso = int(argv[1])
-			if min < ingreso <= max:
-				return self.CHALLENGES[ingreso]
+		if hint is None:
+			return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", indent=1, min=min, max=max)]
+		elif result:= self.CHALLENGES.get(hint):
+			return result
 		else:
-			return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", min=min, max=max)]
+			raise Exception(f"Challenge of id {hint} not found. Logged challenges are between {min} and {max}.")
 
-	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
-		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
+	# def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
+		# return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
 		
-	def consult_04_who_is_black(self, pname):
-		ic(self.PLAYERS[pname].is_black)
+	# def consult_04_who_is_black(self, pname):
+		# ic(self.PLAYERS[pname].is_black)
 	
-	def consult_05_2v2_score(self, pname):
-		ic(self.PLAYERS[pname].wins2v2_total)
-		ic(self.PLAYERS[pname].loses2v2_total)
+	# def consult_05_2v2_score(self, pname):
+		# ic(self.PLAYERS[pname].wins2v2_total)
+		# ic(self.PLAYERS[pname].loses2v2_total)
 
 	
 	###--------------------------Private.Methods-----------------------###
@@ -707,7 +747,12 @@ SISTEMA = ChallengeSystem(
 	chacsv = Path.cwd() / r"data\challenges.csv",
 	chalog = Path.cwd() / r"output\challenges.log",
 	status = Path.cwd() / r"output\status.log",
+	webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
 )
+
+
+
+
 	
 if __name__ == "__main__":
 	SISTEMA.write_chalog();
@@ -715,10 +760,17 @@ if __name__ == "__main__":
 	# SISTEMA.write_csv();
 	
 	
-	"""4. Consultas functions"""
+		
+	"""1. Consultas functions"""
 	# SISTEMA.consult_03_player_vs_player()
 	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
-	"""1. SendToChlngUpdates"""
-	SISTEMA.get_challenge(sys.argv).post(sys.argv, webhook_url="https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA")
+	"""2. Argv"""
+		# python cha.py 312
+		# python cha.py 314 post
+		# python cha.py 314 post_till_end
+	SISTEMA.execute_argv_operations_if_any(sys.argv);
+	
+	"""3. SendToChlngUpdates"""
+	SISTEMA.get_challenge(hint=None).post()
