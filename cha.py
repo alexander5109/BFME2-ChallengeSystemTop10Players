@@ -271,15 +271,12 @@ class ChallengeEvent:
 					),
 					"inline": False
 				},{
-					"name": "Spot Undefended",
-					"value": (
-						f"- {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
-					),
-					"inline": False
-				},{
 					"name": "Outcome",
 					"value": (
-						f"- {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
+						f"- **{self.defender.history.name}** has refused to defend his spot or hasn't arranged a play-date to defend it.\n"
+						"```diff\n"
+						f"+ {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!\n"
+						"```"
 					),
 					"inline": False
 				},{
@@ -310,22 +307,16 @@ class ChallengeEvent:
 			"fields": [{
 					"name": f"Challenge № {self.key}",
 					"value": (
-						f"- **Added player**: {self.challenger.history.name} ({self.challenger.rank_ordinal})"
-						f"\n- **Kicked player**: {self.defender.history.name} ({self.defender.rank_ordinal})"
-						f"\n- **Registered Date**: {self.dateString}"
-					),
-					"inline": False
-				},{
-					"name": "Inactive players cleaning",
-					"value": (
 						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
 					),
 					"inline": False
 				},{
 					"name": "Outcome",
 					"value": (
-						f"- **{self.defender.history.name}** has been kicked from the {self.defender.rank_ordinal} spot and from the list."
-						f"\n- **{self.challenger.history.name}** has been added to the top10 list, starting in the 10th spot."
+						"```diff\n"
+						f"- {self.defender.history.name} ({self.defender.rank_ordinal}) has been kicked from the list.\n"
+						f"+ {self.challenger.history.name} has been set to in the 10th spot.\n"
+						"```"
 					),
 					"inline": False
 				},{
@@ -372,6 +363,7 @@ class ChallengeEvent:
 				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
 			)
 		embed = self.embed | {
+			# "description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"description": f"**{self.challenger.history.name}** versus **{self.defender.history.name}**.\n",
 			"fields": [{
 					"name": f"Challenge № {self.key}",
@@ -388,7 +380,9 @@ class ChallengeEvent:
 				},{
 					"name": "Outcome",
 					"value": (
-						f"- **{self.winner.history.name}** {'flawlessly ' if self.loser.wins == 0 else ''} {'defended' if self.defender is self.winner else 'has taken over'} the **{self.defender.rank_ordinal}** spot!"
+						"```diff\n"
+						f"+ {self.winner.history.name} {'flawlessly ' if self.loser.wins == 0 else ''} {'defended' if self.defender is self.winner else 'has taken over'} the {self.defender.rank_ordinal} spot!\n"
+						"```"
 					),
 					"inline": False
 				},{
@@ -402,6 +396,12 @@ class ChallengeEvent:
 				}
 			],
 		}
+		if self.notes:
+			embed["fields"].insert(-2,{
+				"name": "Notes: ",
+				"value": f"- {self.notes}",
+				"inline": False
+			})
 		webhook_message = response.json()
 		message_id = webhook_message["id"]
 		webhook_url_edit = f"{self.chasys.webhook_url}/messages/{message_id}"
@@ -661,7 +661,7 @@ class ChallengeSystem:
 		argv_dict = self.__get_validated_argv_dict(argv)
 		if argv_dict["post"]:
 			instance = self.CHALLENGES[argv_dict["cha_id"]]
-			instance.post()
+			instance.post(confirmed=True)
 		elif argv_dict["post_all"]:
 			self.send_all_posts(argv_dict["cha_id"])
 			
@@ -775,4 +775,4 @@ if __name__ == "__main__":
 	SISTEMA.execute_argv_operations_if_any(sys.argv);
 	
 	"""3. SendToChlngUpdates"""
-	SISTEMA.get_challenge(hint=None).post()
+	# SISTEMA.get_challenge(hint=None).post()
