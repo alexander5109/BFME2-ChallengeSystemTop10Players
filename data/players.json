@@ -11,6 +11,10 @@
         }
     },
     "active": {
+        "FALCON": {
+            "nicknames": ["Charizard", "Falcon"],
+            "discord_ids": ["charizard99."]
+        },
         "ASTRO": {
             "nicknames": ["ASTRO"],
             "discord_ids": []
