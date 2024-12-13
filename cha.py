@@ -343,7 +343,7 @@ class ChallengeEvent:
 	def __post_normal_mode(self, discord_message):
 		
 		while not self.replays_dir.exists():
-			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n\tDo you want to make sure to rename replays accordingly and try again?"):
+			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
 				sys.exit("Ok bye")
 		response = requests.post(
 			self.chasys.webhook_url,
