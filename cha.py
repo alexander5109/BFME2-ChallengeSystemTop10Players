@@ -545,7 +545,6 @@ class ChallengeNoScoreMode(IChallengeEvent):
 class ChallengeKickAddMode(IChallengeEvent):
 	embed_color = 0x981D98 ## BNomEacuerdo
 	
-		
 	###--------------------------properties----------------------###
 	@cached_property
 	def winner(self):
@@ -740,33 +739,34 @@ class ChallengeSystem:
 			time.sleep(60*7)
 			
 			
-	def __get_validated_argv_dict(self, argv):
-		argv_dict = {
-			"cha_id": None,
-			"post": None,
-			"post_all": None
-		}
-		if len(argv) > 2:
-			if argv[1].isnumeric():
-				cha_id = int(argv[1])
-				min = 1
-				max = len(self.CHALLENGES)
-				if min <= cha_id <= max:
-					argv_dict["cha_id"] = cha_id
-				else:
-					raise Exception(f"Challenge out of the range {min}-{max} range.")
-			else:
-				raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
-			if argv[2] not in argv_dict:
-				raise Exception(f"Wrong argv: {argv[2]} is not a valid method")
-			else:
-				argv_dict[argv[2]] = True
-		return argv_dict	
 			
 	def execute_argv_operations_if_any(self, argv):
+		def __get_validated_argv_dict(argv):
+			argv_dict = {
+				"cha_id": None,
+				"post": None,
+				"post_all": None
+			}
+			if len(argv) > 2:
+				if argv[1].isnumeric():
+					cha_id = int(argv[1])
+					min = 1
+					max = len(self.CHALLENGES)
+					if min <= cha_id <= max:
+						argv_dict["cha_id"] = cha_id
+					else:
+						raise Exception(f"Challenge out of the range {min}-{max} range.")
+				else:
+					raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
+				if argv[2] not in argv_dict:
+					raise Exception(f"Wrong argv: {argv[2]} is not a valid method")
+				else:
+					argv_dict[argv[2]] = True
+			return argv_dict	
+			
 		if len(argv) == 1:
 			return
-		argv_dict = self.__get_validated_argv_dict(argv)
+		argv_dict = __get_validated_argv_dict(argv)
 		if argv_dict["post"]:
 			instance = self.CHALLENGES[argv_dict["cha_id"]]
 			instance.post(confirmed=True)
