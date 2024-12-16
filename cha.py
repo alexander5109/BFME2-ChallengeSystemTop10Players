@@ -45,8 +45,23 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 		elif ingreso == letra2:
 			return False
 	
-    
-    
+	
+	
+# @dataclass
+# class PlayerData:
+	# key: str
+	# rank: int
+	# names: list[str]
+	# cha_wins: int = 0
+	# cha_loses: int = 0
+	
+	
+	
+	
+	
+	
+	
+	
 #-------------------------------------------------------------------------------------------------------------#
 #"""-------------------------------------------Player.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
@@ -155,30 +170,37 @@ class IChallengeEvent(ABC):
 		self.row = row
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
-		self.dateString = datetime.strptime(row["date"], '%Y-%m-%d').strftime('%Y-%m-%d')
 		self.notes = row['notes']
 		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
 		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
+		self._01_integrity_check()
+		self._02_impact_players_historial()
+		self.__03_impact_players_top10_rank()
+		self.__05_freeze_current_top_10_string()
+	
+	###--------------------------Public.Methods-----------------------###
+	def post(self, confirmed=False):
+		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
+			return
+		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
+		response = self._06_get_my_post(discord_message)
+		
+		if response.status_code in {200, 204}:
+			print(f"Challenge Nº{self.key} successfully sent to Discord via the webhook!")
+		else:
+			print(f"Failed to send webhookof challenge Nº{self.key}: \n{response.status_code} - {response.text}")
 
-	@abstractmethod
-	def unique_behavior(self):
-		"""Must be implemented by all subclasses."""
-		pass
-	
-	###--------------------------Protected.Methods-----------------------###
-	def _04_master_freeze_current_top_10_string(self):
-		self.top10 = "\t\tTOP 10\n"
-		lista = [player for player in self.chasys.PLAYERS.values() if 1 <= player.rank <= 10]
-		for player in sorted(lista, key=lambda p: p.rank, reverse=True):
-			self.top10 += f"\t{player.rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-	
+
 			
-	def _03_master_set_player_ranks(self):
-		if self.challenger is self.winner:
-			for player in self.chasys.PLAYERS.values():
-				self._set_rank_for_player(player)	
-	
-	def _set_rank_for_player(challenge, player):
+	###--------------------------Protected.Methods-----------------------###
+	def _01_integrity_check(self): 
+		raise Exception("Please implement me")
+		
+	def _02_impact_players_historial(self): 
+		raise Exception("Please implement me")
+			
+	def _03_set_rank_for_player(challenge, player):
+		"""Comportamiento normal"""
 		if player.key == challenge.challenger.key:
 			player.rank = challenge.defender.rank
 			return
@@ -191,31 +213,39 @@ class IChallengeEvent(ABC):
 			
 		if player.rank > challenge.loser.rank:
 			player.rank += 1
+			
+	def _04_get_my_report(self): 
+		raise Exception("Please implement me")
 	
 	
-	def _report_01_02_chamessage(self):
-		string = (
+	def _05_str_who_challenged_who(self):
+		"""Comportamiento normal"""
+		return (
 			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
 			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
 		)
-		if self.games2v2:
-			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
-		return string
 		
-	###--------------------------Public.Methods-----------------------###
-	def post(self, confirmed=False):
-		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
-			return
-		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
-		response = self._post_my_shit(discord_message)
+	def _06_get_my_post(self): 
+		raise Exception("Please implement me")
 		
-		if response.status_code in {200, 204}:
-			print(f"Challenge Nº{self.key} successfully sent to Discord via the webhook!")
-		else:
-			print(f"Failed to send webhookof challenge Nº{self.key}: \n{response.status_code} - {response.text}")
-
-
+	###--------------------------Private.Methods-----------------------###
+	def __03_impact_players_top10_rank(self):
+		if self.challenger is self.winner:
+			for player in self.chasys.PLAYERS.values():
+				self._03_set_rank_for_player(player)
+				
+	def __05_freeze_current_top_10_string(self):
+		self.top10 = "\t\tTOP 10\n"
+		lista = [player for player in self.chasys.PLAYERS.values() if 1 <= player.rank <= 10]
+		for player in sorted(lista, key=lambda p: p.rank, reverse=True):
+			self.top10 += f"\t{player.rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
+			
 	###--------------------------properties----------------------###
+	
+	@cached_property
+	def dateString(self):
+		return self.date.strftime('%Y-%m-%d')
+		
 	@cached_property
 	def replays_dir(self):
 		return None
@@ -274,7 +304,7 @@ class IChallengeEvent(ABC):
 			"\n```diff\n"
 			f"\n- Challenge № {self.key}"
 			f"\n- Update {self.dateString}"
-			f"{self._report_my_shit()}"
+			f"{self._04_get_my_report()}"
 			f"\n\nLet the challenges continue!"
 			f"\n\n{self.top10}```"
 		)
@@ -289,27 +319,77 @@ class IChallengeEvent(ABC):
 class ChallengeNormal(IChallengeEvent):
 	embed_color = 0x5DD9DF ## Blueish
 	
-	def __init__(self, chasys, key, row):
-		super().__init__(chasys, key, row)
-		self.__02_normal_cha_set_player_records()	##perfecto
-		self._03_master_set_player_ranks()
-		self._04_master_freeze_current_top_10_string()
-	
-	
-			
+	###--------------------------properties----------------------###
+	@cached_property
+	def winner(self):
+		return self.player1 if self.player1.wins > self.player2.wins else self.player2
+
+	@cached_property
+	def replays_dir(self):
+		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
+		
 	###--------------------------Protected.Methods-----------------------###
-	def _report_my_shit(self):
+	def _01_integrity_check(self):
+		if not self.games_total:
+			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
+			
+	def _02_impact_players_historial(self):
+		self.winner.history.cha_wins += 1
+		self.winner.history.wins_total += self.winner.wins
+		self.winner.history.wins1v1_total += self.winner.wins1v1
+		self.winner.history.wins2v2_total += self.winner.wins2v2
+
+		self.loser.history.cha_loses += 1
+		self.loser.history.wins_total += self.loser.wins
+		self.loser.history.wins1v1_total += self.loser.wins1v1
+		self.loser.history.wins2v2_total += self.loser.wins2v2
+		
+		self.winner.history.games_played_total += self.games_total
+		self.winner.history.games_played_1v1 += self.games1v1
+		self.winner.history.games_played_2v2 += self.games2v2
+		
+		self.loser.history.games_played_total += self.games_total
+		self.loser.history.games_played_1v1 += self.games1v1
+		self.loser.history.games_played_2v2 += self.games2v2
+			
+	def _03_set_rank_for_player(challenge, player):
+		"""Comportamiento normal"""
+		return super()._03_set_rank_for_player(player)
+		
+	def _04_get_my_report(self):
+		def __report_01_report_defenseortakeover():
+			flawlessly = "flawlessly " if self.loser.wins == 0 else ""
+			if self.defender is self.winner:
+				return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
+			else:
+				return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
+				
+		def __report_01_report_score():
+			string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
+			if self.games2v2:
+				string += (f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
+					f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
+				)
+			return string
+			
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
-			f"{self._report_01_02_chamessage()}"
-			f"{self.__report_01_report_score()}"
-			f"{self.__report_01_report_defenseortakeover()}"
+			f"{self._05_str_who_challenged_who()}"
+			f"{__report_01_report_score()}"
+			f"{__report_01_report_defenseortakeover()}"
 			f"{commment_line}"
 			f"\n\nGames were played in {self.version}"
 		)
+		
+	def _05_str_who_challenged_who(self):
+		"""Comportamiento normal + traditional chlng reference"""
+		string = super()._05_str_who_challenged_who()
+		if self.games2v2:
+			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
+		return string
 	
 
-	def _post_my_shit(self, discord_message):
+	def _06_get_my_post(self, discord_message):
 		while not self.replays_dir.exists():
 			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
 				sys.exit("Ok bye")
@@ -376,57 +456,7 @@ class ChallengeNormal(IChallengeEvent):
 			json=edit_payload
 		)
 	
-	###--------------------------Private.Methods-----------------------###
-	def __set_records(challenge, player):
-		if challenge.winner.key == player.key:
-			player.cha_wins += 1
-			player.wins_total += challenge.winner.wins
-			player.wins1v1_total += challenge.winner.wins1v1
-			player.wins2v2_total += challenge.winner.wins2v2
-		elif challenge.loser.key == player.key:
-			player.cha_loses += 1
-			player.wins_total += challenge.loser.wins
-			player.wins1v1_total += challenge.loser.wins1v1
-			player.wins2v2_total += challenge.loser.wins2v2
-		else:
-			raise Exception("This player didn't even participate")
-		
-		player.games_played_total += challenge.games_total
-		player.games_played_1v1 += challenge.games1v1
-		player.games_played_2v2 += challenge.games2v2
-		
-	def __02_normal_cha_set_player_records(self):
-		self.__set_records(self.winner.history)
-		self.__set_records(self.loser.history)
-			
-		
-	def __report_01_report_score(self):
-		string = f"\nScore 1vs1: {self.winner.wins1v1}-{self.loser.wins1v1} for {self.winner.history.name}"
-		if self.games2v2:
-			string += (f"\nScore 2vs2: {self.winner.wins2v2}-{self.loser.wins2v2} for {self.winner.history.name}"
-				f"\nScore: {self.winner.wins}-{self.loser.wins} for {self.winner.history.name}"
-			)
-		return string
 
-	def __report_01_report_defenseortakeover(self):
-		flawlessly = "flawlessly " if self.loser.wins == 0 else ""
-		if self.defender is self.winner:
-			return f"\n\n+ {self.defender.history.name} has {flawlessly}defended the {self.defender.rank_ordinal} spot!"
-		else:
-			return f"\n\n+ {self.challenger.history.name} has {flawlessly}taken over the {self.defender.rank_ordinal} spot!"
-
-	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1 if self.player1.wins > self.player2.wins else self.player2
-
-
-	@cached_property
-	def replays_dir(self):
-		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
-		
-		
-	
 	
 	
 	
@@ -438,36 +468,35 @@ class ChallengeNormal(IChallengeEvent):
 class ChallengeNoScoreMode(IChallengeEvent):
 	embed_color = 0xFFA500 ## BNomEacuerdo
 	
-	def __init__(self, chasys, key, row):
-		super().__init__(chasys, key, row)
-		self.__01_anormal_cha_row_integrityu_check()
-		self._03_master_set_player_ranks()
-		self._04_master_freeze_current_top_10_string()
-		
-		
-		
-		
-		
-	###--------------------------Private.Methods-----------------------###
-	def __01_anormal_cha_row_integrityu_check(self):
+	###--------------------------properties----------------------###
+	@cached_property
+	def winner(self):
+		return self.player1
+	
+	###--------------------------Protected.Methods-----------------------###
+	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 			
+	def _02_impact_players_historial(self):
+		"DodgedChallenge is designed to not affect player winrate"
+		pass
 			
+	def _03_set_rank_for_player(challenge, player):
+		"""Comportamiento normal"""
+		return super()._03_set_rank_for_player(player)
 			
-	###--------------------------Protected.Methods-----------------------###
-	def _report_my_shit(self):
+	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
-			f"{self._report_01_02_chamessage()}"
+			f"{self._05_str_who_challenged_who()}"
 			f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
 			f"\n\n+ {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
 			f"{commment_line}"
 			f"\n\nNo wins or losses have been scored."
 		)
 			
-	
-	def _post_my_shit(self, discord_message):
+	def _06_get_my_post(self, discord_message):
 		embed = self.embed | {
 			"fields": [{
 					"name": "Players",
@@ -507,11 +536,6 @@ class ChallengeNoScoreMode(IChallengeEvent):
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 			
-	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1
-	
 		
 	
 
@@ -521,32 +545,24 @@ class ChallengeNoScoreMode(IChallengeEvent):
 class ChallengeKickAddMode(IChallengeEvent):
 	embed_color = 0x981D98 ## BNomEacuerdo
 	
-	def __init__(self, chasys, key, row):
-		super().__init__(chasys, key, row)
-		self.__01_anormal_cha_row_integrityu_check()
-		self._03_master_set_player_ranks()
-		self._04_master_freeze_current_top_10_string()
 		
-	###--------------------------Private.Methods-----------------------###
-	def __01_anormal_cha_row_integrityu_check(self):
+	###--------------------------properties----------------------###
+	@cached_property
+	def winner(self):
+		return self.player1
+		
+	###--------------------------Protected.Methods-----------------------###
+	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
+	def _02_impact_players_historial(self):
+		"KickAddMode is designed to not affect player winrate"
+		pass
+
 		
-	###--------------------------Protected.Methods-----------------------###
-	def _report_my_shit(self):
-		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
-		return (
-			f"\n\nAddAndKickUpdate: "
-			f"Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
-			f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list."
-			f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
-			f"{commment_line}"
-			f"\n\nNo wins or losses have been scored."
-		)
-		
-		
-	def _set_rank_for_player(challenge, player):
+	def _03_set_rank_for_player(challenge, player):
+		"""override default behavior"""
 		if player.key == challenge.challenger.key:
 			player.rank = 10
 			return
@@ -560,10 +576,27 @@ class ChallengeKickAddMode(IChallengeEvent):
 		if 11 > player.rank > challenge.loser.rank:
 			player.rank -= 1
 		elif player.rank > challenge.loser.rank:
-			player.rank += 1		
+			player.rank += 1	
+		
+	def _04_get_my_report(self):
+		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
+		return (
+			f"{self._05_str_who_challenged_who()}"
+			f"\n\nAddAndKickUpdate: "
+			f"Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
+			f"\n\n- {self.defender.history.name} has been kicked from the {self.defender.rank_ordinal} spot and from the list."
+			f"\n\n+ {self.challenger.history.name} has been added to the top10 list, starting in the 10th spot."
+			f"{commment_line}"
+			f"\n\nNo wins or losses have been scored."
+		)
+		
+		
+	def _05_str_who_challenged_who(self):
+		"""in Kick add Mode noone challenged anyone"""
+		return ""	
 			
 			
-	def _post_my_shit(self, discord_message):
+	def _06_get_my_post(self, discord_message):
 		embed = self.embed | {
 			"fields": [{
 					"name": "Kick-Add Update",
@@ -602,13 +635,6 @@ class ChallengeKickAddMode(IChallengeEvent):
 			"embeds": [embed]
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
-
-	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1
-		
-
 
 
 
