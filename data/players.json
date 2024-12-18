@@ -11,6 +11,10 @@
         }
     },
     "active": {
+        "VIOLENCE": {
+            "nicknames": ["Violence"],
+            "discord_ids": ["#violence4412"]
+        },
         "FALCON": {
             "nicknames": ["Charizard", "Falcon"],
             "discord_ids": ["@charizard99."]
