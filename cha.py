@@ -4,12 +4,12 @@ from icecream import ic
 import json
 # import py7zr
 from functools import cached_property
-from bidict import bidict
+# from bidict import bidict
 import requests
 import csv
 import sys
 import time
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 	
 	
 	
@@ -45,15 +45,6 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 		elif ingreso == letra2:
 			return False
 	
-	
-	
-# @dataclass
-# class PlayerData:
-	# key: str
-	# rank: int
-	# names: list[str]
-	# cha_wins: int = 0
-	# cha_loses: int = 0
 	
 	
 	
@@ -105,9 +96,9 @@ class Player:
 		
 	###--------------------------Public.Properties-----------------------###
 	@classmethod
-	def instance_with_rank(cls, key, value, legacy):
-		if rank:= legacy.inverse.get(key):
-			return cls(key, value, rank)
+	def instance_with_rank_and_fill_legacy(cls, key, value, legacy):
+		if rank:= legacy.get(key):
+			return cls(key, value, int(rank))
 		else:
 			rank = len(legacy)+1
 			legacy[rank] = key
@@ -163,7 +154,7 @@ class Player:
 #"""---------------------------------ChallengeEvent.Class.02----------------------------"""#
 #------------------------------------------------------------------------------------------#
 # Define an interface
-class IChallengeEvent(ABC):
+class IChallengeEvent():
 	def __init__(self, chasys, key, row):
 		self.chasys = chasys
 		self.key = key
@@ -664,9 +655,12 @@ class PlayerInChallenge:
 	###--------------------------Private.Methods-----------------------###
 	def __01_freeze_current_history(self):
 		self.rank = self.history.rank
-		self.wins = self.wins1v1 + self.wins2v2
 		
 	###--------------------------Properties-----------------------###
+	@cached_property
+	def wins(self):
+		return self.wins1v1 + self.wins2v2
+		
 	@cached_property
 	def previous_challenge(self):
 		return self.history.challenges[self.history.challenges.index(self.challenge)-1]
@@ -836,9 +830,9 @@ class ChallengeSystem:
 		
 		
 	def __read_PLAYERS(self, player_data):
-		legacy = bidict({int(key): value for key, value in player_data["legacy"]["top10"].items()})
+		legacy = player_data["legacy"]["top10"]
 		if self.chalog.exists():
-			return { key: Player.instance_with_rank(key, value, legacy) for key, value in player_data["active"].items() }
+			return { key: Player.instance_with_rank_and_fill_legacy(key, value, legacy) for key, value in player_data["active"].items() }
 		else:
 			raise Exception(f"No existe {self.chalog}")
 		
