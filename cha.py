@@ -2,13 +2,13 @@ from datetime import datetime, UTC
 from pathlib import Path
 from icecream import ic
 import json
-# import py7zr
 from functools import cached_property
-# from bidict import bidict
 import requests
-import csv
+# import csv
 import sys
 import time
+# from bidict import bidict
+# import py7zr
 # from abc import ABC, abstractmethod
 	
 	
@@ -808,25 +808,33 @@ class ChallengeSystem:
 
 	
 	###--------------------------Private.Methods-----------------------###
+	
 	def __read_CHALLENGES(self):
-		dataaaa = {}
-		if self.chacsv.exists() and self.chacsv.stat().st_size > 0:
-			with open(self.chacsv, mode='r', encoding='latin1') as file:
-				reader = csv.DictReader(file, delimiter=';')
-				rows = sorted(reader, key=lambda row: int(row['key']))
-				for row in rows:
-					key = int(row['key'])
-					version = row["version"]
-					if version == "NO_SCORE_MODE":
-						dataaaa[key] = ChallengeNoScoreMode(self, key, row)
-					elif version == "KICK_ADD_MODE":
-						dataaaa[key] = ChallengeKickAddMode(self, key, row)
-					else:
-						dataaaa[key] = ChallengeNormal(self, key, row)
-						
-		else:
+		def sorted_dict_of_chall_from_lines(lines):
+			headers = lines[0].strip().split(';')
+			rows = [line.strip().split(';') for line in lines[1:]]
+			key_column = 0 #the column that says KEY
+			sorted_rows = sorted(rows, key=lambda row: int(row[key_column]))
+			dataaaa = {}
+			for row in sorted_rows:
+				row_dict = {headers[i]: row[i] for i in range(len(headers))}
+				key = int(row_dict['key'])
+				version = row_dict['version']
+				if version == "NO_SCORE_MODE":
+					dataaaa[key] = ChallengeNoScoreMode(self, key, row_dict)
+				elif version == "KICK_ADD_MODE":
+					dataaaa[key] = ChallengeKickAddMode(self, key, row_dict)
+				else:
+					dataaaa[key] = ChallengeNormal(self, key, row_dict)
+			return dataaaa
+			
+		if not self.chacsv.exists() or self.chacsv.stat().st_size == 0:
 			raise Exception(f"No existe {self.chacsv}")
-		return dataaaa
+			return
+		else:
+			with open(self.chacsv, mode='r', encoding='latin1') as file:
+				lines = file.readlines()
+			return sorted_dict_of_chall_from_lines(lines)
 		
 		
 	def __read_PLAYERS(self, player_data):
