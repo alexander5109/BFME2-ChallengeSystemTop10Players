@@ -171,8 +171,8 @@ class IChallengeEvent(ABC):
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.notes = row['notes']
-		self.player1 = PlayerInChallenge(self, row["p1"], row["p1wins1v1"], row["p1wins2v2"])
-		self.player2 = PlayerInChallenge(self, row["p2"], row["p2wins1v1"], row["p2wins2v2"])
+		self.winner = PlayerInChallenge(self, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
+		self.loser = PlayerInChallenge(self, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
 		self._01_integrity_check()
 		self._02_impact_players_historial()
 		self.__03_impact_players_top10_rank()
@@ -245,9 +245,19 @@ class IChallengeEvent(ABC):
 			self.top10 += f"\t{player.rank:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 			
 	###--------------------------properties----------------------###
-	
 	@cached_property
-	def dateString(self):
+	def as_row(self):
+		# return pd.Series([self.key, self.version, self.winner.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.key, self.loser.wins1v1, self.loser.wins2v2, self.date, self.notes], index=["key","version","p1","p1wins1v1","p1wins2v2","p2","p2wins1v1","p2wins2v2","date","notes"])
+		# string = f"{self.key};{self.version};{self.winner.key};{self.winner.wins1v1};{self.winner.wins2v2};{self.loser.key};{self.loser.wins1v1};{self.loser.wins2v2};{self.fecha};"
+		# return ";".join(self)
+		# if self.notes:
+			# string += f';"{self.notes}"'
+		# return string + "\n"
+		columns = map(lambda x: str(x), [self.key, self.version, self.winner.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
+		return ";".join(columns)+"\n"
+			
+	@cached_property
+	def fecha(self):
 		return self.date.strftime('%Y-%m-%d')
 		
 	@cached_property
@@ -267,16 +277,12 @@ class IChallengeEvent(ABC):
 		return self.winner.wins2v2 + self.loser.wins2v2
 			
 	@cached_property
-	def loser(self):
-		return self.player1 if self.winner is self.player2 else self.player2
-
-	@cached_property
 	def challenger(self):
-		return self.player1 if self.player1.rank > self.player2.rank else self.player2
+		return self.winner if self.winner.rank > self.loser.rank else self.loser
 
 	@cached_property
 	def defender(self):
-		return self.player1 if self.challenger is self.player2 else self.player2
+		return self.winner if self.challenger is self.loser else self.loser
 		
 	@cached_property
 	def embed(self):
@@ -286,7 +292,7 @@ class IChallengeEvent(ABC):
 			"description": (
 				"```diff\n"
 				f"- Challenge № {self.key}\n"
-				f"- Update {self.dateString}\n"
+				f"- Update {self.fecha}\n"
 				"```"
 			),
 			"timestamp": datetime.now(UTC).isoformat(),
@@ -307,7 +313,7 @@ class IChallengeEvent(ABC):
 			f"\n{self.replays_dir.stem if self.replays_dir else 'NO_GAMES_NO_REPLAYS'}"
 			"\n```diff\n"
 			f"\n- Challenge № {self.key}"
-			f"\n- Update {self.dateString}"
+			f"\n- Update {self.fecha}"
 			f"{self._04_get_my_report()}"
 			f"\n\nLet the challenges continue!"
 			f"\n\n{self.top10}```"
@@ -324,10 +330,6 @@ class ChallengeNormal(IChallengeEvent):
 	embed_color = 0x5DD9DF ## Blueish
 	
 	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1 if self.player1.wins > self.player2.wins else self.player2
-
 	@cached_property
 	def replays_dir(self):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
@@ -479,9 +481,6 @@ class ChallengeNoScoreMode(IChallengeEvent):
 	embed_color = 0xFFA500 ## BNomEacuerdo
 	
 	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1
 	
 	###--------------------------Protected.Methods-----------------------###
 	def _01_integrity_check(self):
@@ -558,10 +557,6 @@ class ChallengeKickAddMode(IChallengeEvent):
 	embed_color = 0x981D98 ## BNomEacuerdo
 	
 	###--------------------------properties----------------------###
-	@cached_property
-	def winner(self):
-		return self.player1
-		
 	###--------------------------Protected.Methods-----------------------###
 	def _01_integrity_check(self):
 		if self.games_total:
@@ -712,17 +707,23 @@ class ChallengeSystem:
 	def write_csv(self):
 		if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
 			return
-		data = [cha.row for cha in self.CHALLENGES.values() ]
-		if get_boolean("Descendent order?"):
-			data.reverse()
+			
+		# supastring = "key;version;p1;p1wins1v1;p1wins2v2;p2;p2wins1v1;p2wins2v2;date;notes\n"	
+		supastring = "key;version;w_key;w_wins1v1;w_wins2v2;l_key;l_wins1v1;l_wins2v2;date;notes\n"
+		# data = [cha.as_row() for cha in self.CHALLENGES.values() ]
+		for cha in reversed(list(self.CHALLENGES.values())):
+			supastring += cha.as_row
+		# if get_boolean("Descendent order?"):
+			# data.reverse()
 
 		# Write data back to the CSV
 		with open(self.chacsv, mode='w', newline='', encoding='latin1') as file:
-			if data:
-				fieldnames = data[0].keys()
-				writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';', extrasaction='ignore')
-				writer.writeheader()
-				writer.writerows(data)
+			file.write(supastring)
+			# if data:
+				# fieldnames = data[0].keys()
+				# writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';', extrasaction='ignore')
+				# writer.writeheader()
+				# writer.writerows(data)
 		print(".csv guardado.")
 
 	def write_status(self):
