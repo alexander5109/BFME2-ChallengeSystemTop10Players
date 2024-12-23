@@ -338,6 +338,8 @@ class ChallengeNormal(IChallengeEvent):
 	def _01_integrity_check(self):
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
+		if self.winner.wins <= self.loser.wins:
+			raise Exception(f"Error de integridad: Como es posible que el ganador no tenga mas victorias que el perdedor?")
 			
 	def _02_impact_players_historial(self):
 		self.winner.history.cha_wins += 1
