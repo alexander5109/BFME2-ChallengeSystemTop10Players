@@ -85,6 +85,9 @@ class Player:
 		
 		
 	###--------------------------Public.Methods-----------------------###
+	def get_rank(self):
+		return self.chasys.top10list.index(self)
+		
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
 		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
@@ -114,10 +117,6 @@ class Player:
 			# return cls(key, value, rank)
 			
 		
-	def current_rank(self):
-		# return get_index_or_append_if_new(self, self.chasys.top10)
-		return self.chasys.top10.index(self)
-		# return None
 		
 	@cached_property
 	def name(self):
@@ -154,7 +153,12 @@ class Player:
 		return bol
 
 	def __repr__(self):
-		return f"|{self.key}|\tRank:{self.current_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+		# return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+		return f"|{self.key}|\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+		
+	def backup_status(self):
+		return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+		# return f"|{self.key}|\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 
 
 
@@ -183,8 +187,9 @@ class IChallengeEvent():
 		self._00_impact_players_top10_rank()
 		
 		self._02_impact_players_historial()
-		self.__05_freeze_current_top_10_string()
-		# ic(self.chasys.top10)
+		self.top10string = self.__05_freeze_current_top_10_string()
+		# ic(self.chasys.top10list, len(self.chasys.top10list))
+		# input("Continuar?")
 	
 	###--------------------------Public.Methods-----------------------###
 	def post(self, confirmed=False):
@@ -246,20 +251,25 @@ class IChallengeEvent():
 	###--------------------------Private.Methods-----------------------###
 				
 	def __05_freeze_current_top_10_string(self):
-		self.top10 = "\t\tTOP 10\n"
+		string = "\t\tTOP 10\n"
 		# lista = [player for player in self.chasys.PLAYERS.values() if 1 <= player.rank <= 10]
-		# lista = self.chasys.top10
+		# lista = self.chasys.top10list
 		# for player in sorted(lista, key=lambda p: p.rank, reverse=True):
-		# ic(self.chasys.top10.index)
-		for i in range(9, -1, -1):	#iterar del 9 al 0
-			player = self.chasys.top10[i]
+		# ic(self.chasys.top10list.index)
+		# for i in range(9, -1, -1):	#iterar del 9 al 0
+		# max = len(self.chasys.PLAYERS) ## 14 ## 9
+		max = 9
+		for i in range(max, -1, -1):	#iterar del 9 al 0
+			if i >= len(self.chasys.top10list):
+				continue
+			player = self.chasys.top10list[i]
 			# ic(player, i)
 		# for player in enumerate(lista, start=1):
-			self.top10 += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-			# self.top10 += f"\t{i+1:<4}. {player} {player.cha_wins}-{player.cha_loses}\n"
+			string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
+			# string += f"\t{i+1:<4}. {player} {player.cha_wins}-{player.cha_loses}\n"
 			# ic(player, type(player))
-			# self.top10 += f"\t{i+1:<4}. {player.key} {543534}-{53454354}\n"
-			
+			# string += f"\t{i+1:<4}. {player.key} {543534}-{53454354}\n"
+		return string
 	###--------------------------properties----------------------###
 	@cached_property
 	def as_row(self):
@@ -332,7 +342,7 @@ class IChallengeEvent():
 			f"\n- Update {self.fecha}"
 			f"{self._04_get_my_report()}"
 			f"\n\nLet the challenges continue!"
-			f"\n\n{self.top10}```"
+			f"\n\n{self.top10string}```"
 		)
 		
 
@@ -354,8 +364,8 @@ class ChallengeNormal(IChallengeEvent):
 	def _00_impact_players_top10_rank(self):
 		##Normal scenario.
 		if self.challenger is self.winner:
-			self.chasys.top10.pop(self.winner.rank) 
-			self.chasys.top10.insert(self.loser.rank, self.winner.history) 
+			self.chasys.top10list.pop(self.winner.get_rank()) 
+			self.chasys.top10list.insert(self.loser.get_rank(), self.winner.history) 
 		
 		
 	def _01_integrity_check(self):
@@ -464,7 +474,7 @@ class ChallengeNormal(IChallengeEvent):
 					"inline": True
 				},{
 					"name": "Let the Challenges Continue!",
-					"value": f"```diff\n{self.top10}```",
+					"value": f"```diff\n{self.top10string}```",
 					"inline": False
 				}
 			],
@@ -511,8 +521,8 @@ class ChallengeNoScoreMode(IChallengeEvent):
 	def _00_impact_players_top10_rank(self):
 		##NoScore scenario.
 		if self.challenger is self.winner:
-			self.chasys.top10.pop(self.winner.rank) 
-			self.chasys.top10.insert(self.loser.rank, self.winner.history) 
+			self.chasys.top10list.pop(self.winner.get_rank()) 
+			self.chasys.top10list.insert(self.loser.get_rank(), self.winner.history) 
 
 	def _01_integrity_check(self):
 		if self.games_total:
@@ -560,7 +570,7 @@ class ChallengeNoScoreMode(IChallengeEvent):
 					"inline": False
 				},{
 					"name": "Let the Challenges Continue!",
-					"value": f"```diff\n{self.top10}```",
+					"value": f"```diff\n{self.top10string}```",
 					"inline": False
 				}],
 		}
@@ -591,8 +601,10 @@ class ChallengeKickAddMode(IChallengeEvent):
 	###--------------------------Protected.Methods-----------------------###
 	def _00_impact_players_top10_rank(self):
 		##KickAdd scenario.
-		self.chasys.top10.pop(self.loser.rank)
-		self.chasys.top10.insert(9, self.winner.history)
+		self.chasys.top10list.pop(self.loser.rank)
+		self.chasys.top10list.pop(self.winner.get_rank())
+		self.chasys.top10list.insert(9, self.winner.history)
+		self.chasys.top10list.insert(10, self.loser.history)
 
 
 
@@ -663,7 +675,7 @@ class ChallengeKickAddMode(IChallengeEvent):
 					"inline": False
 				},{
 					"name": "Let the Challenges Continue!",
-					"value": f"```diff\n{self.top10}```",
+					"value": f"```diff\n{self.top10string}```",
 					"inline": False
 				}
 			],
@@ -693,12 +705,15 @@ class PlayerInChallenge:
 	def __init__(self, challenge, key, wins1v1, wins2v2):
 		self.challenge = challenge
 		self.history = self.challenge.chasys.PLAYERS[key]
-		# self.rank = self.challenge.chasys.top10.index(key)
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
 		self.history.challenges.append(self.challenge)
-		self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10)
-			
+		# self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
+		# self.rank = self.challenge.chasys.top10list.index(key)
+		self.rank = self.get_rank()
+	
+	def get_rank(self):
+		return get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
 		
 	###--------------------------Properties-----------------------###
 	@cached_property
@@ -740,14 +755,15 @@ class ChallengeSystem:
 		self.status = status
 		self.webhook_url = webhook_url
 		self.PLAYERS = self.__read_PLAYERS(player_data["active_players"])
-		self.top10 = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
+		self.top10list = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
 		# for i in range(0, 10):
-			# self.top10[i].rank = i
+			# self.top10list[i].rank = i
 		
-		# ic(player_data["legacy"]["top10"].keys())
-		ic(self.top10)
+		# ic(player_data["legacy"]["top10list"].keys())
+		# ic(self.top10list)
 		self.CHALLENGES = self.__read_CHALLENGES()
 		
+		# ic(self.top10list)
 		
 	# def apply_legacy(self):
 		
@@ -776,7 +792,7 @@ class ChallengeSystem:
 		print(".csv guardado.")
 
 	def write_status(self):
-		super_string = "\n".join(str(player) for player in sorted( self.PLAYERS.values() ))
+		super_string = "\n".join(str(player.backup_status()) for player in sorted( self.PLAYERS.values() ))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
