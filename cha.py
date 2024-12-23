@@ -4,13 +4,14 @@ from icecream import ic
 import json
 from functools import cached_property
 import requests
-# import csv
 import sys
 import time
+
+
+# import csv
 # from bidict import bidict
 # import py7zr
 # from abc import ABC, abstractmethod
-	
 	
 	
 	
@@ -57,9 +58,10 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 #"""-------------------------------------------Player.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class Player:
-	def __init__(self, key, value, rank):
+	rank = None
+	def __init__(self, key, value):
 		self.key = key
-		self.rank = rank
+		# self.rank = rank
 		self.names = value["nicknames"]
 		# self.discord_id = value["discord_id"]
 
@@ -95,14 +97,14 @@ class Player:
 				return None
 		
 	###--------------------------Public.Properties-----------------------###
-	@classmethod
-	def instance_with_rank_and_fill_legacy(cls, key, value, legacy):
-		if rank:= legacy.get(key):
-			return cls(key, value, int(rank))
-		else:
-			rank = len(legacy)+1
-			legacy[rank] = key
-			return cls(key, value, rank)
+	# @classmethod
+	# def instance_with_rank_and_fill_legacy(cls, key, value, legacy):
+		# if rank:= legacy.get(key):
+			# return cls(key, value, int(rank))
+		# else:
+			# rank = len(legacy)+1
+			# legacy[rank] = key
+			# return cls(key, value, rank)
 
 	@cached_property
 	def name(self):
@@ -184,6 +186,8 @@ class IChallengeEvent():
 
 			
 	###--------------------------Protected.Methods-----------------------###
+
+	
 	def _01_integrity_check(self): 
 		raise Exception("Please implement me")
 		
@@ -225,9 +229,7 @@ class IChallengeEvent():
 		
 	###--------------------------Private.Methods-----------------------###
 	def __03_impact_players_top10_rank(self):
-		if self.challenger is self.winner:
-			for player in self.chasys.PLAYERS.values():
-				self._03_set_rank_for_player(player)
+		raise Exception("Please implement me")
 				
 	def __05_freeze_current_top_10_string(self):
 		self.top10 = "\t\tTOP 10\n"
@@ -326,6 +328,16 @@ class ChallengeNormal(IChallengeEvent):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------------Protected.Methods-----------------------###
+	def __03_impact_players_top10_rank(self):
+		# if self.challenger is self.winner:
+			# for player in self.chasys.PLAYERS.values():
+				# self._03_set_rank_for_player(player)
+				
+		"""normal challenger winner scenario"""
+		if self.challenger is self.loser:
+			self.chasys.legacy_list.pop(self.winner.rank-1) ##saco al ganador de su under-spot, todos los de abajo suben.
+			self.chasys.legacy_list.insert(self.loser.rank-1, self.winner) #agrego al ganador en el spot del loser, todos los de abajo suben.
+
 	def _01_integrity_check(self):
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
@@ -476,6 +488,10 @@ class ChallengeNoScoreMode(IChallengeEvent):
 	###--------------------------properties----------------------###
 	
 	###--------------------------Protected.Methods-----------------------###
+	def __03_impact_players_top10_rank(self):
+		"""Nada indeed"""
+		return None
+
 	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
@@ -551,6 +567,13 @@ class ChallengeKickAddMode(IChallengeEvent):
 	
 	###--------------------------properties----------------------###
 	###--------------------------Protected.Methods-----------------------###
+	def __03_impact_players_top10_rank(self):
+		##KickAdd scenario.
+		self.chasys.legacy_list.pop(self.loser.rank-1)
+		self.chasys.legacy_list.insert(10-1, self.winner)
+
+
+
 	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
@@ -645,16 +668,14 @@ class ChallengeKickAddMode(IChallengeEvent):
 #-------------------------------------------------------------------------------------------------------------#
 class PlayerInChallenge:
 	def __init__(self, challenge, key, wins1v1, wins2v2):
-		self.key = key
 		self.challenge = challenge
+		self.history = self.challenge.chasys.PLAYERS[key]
+		# self.rank = self.history.rank
+		self.rank = self.challenge.chasys.top10.index(key)
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
-		self.__01_freeze_current_history()
 		self.history.challenges.append(self.challenge)
 			
-	###--------------------------Private.Methods-----------------------###
-	def __01_freeze_current_history(self):
-		self.rank = self.history.rank
 		
 	###--------------------------Properties-----------------------###
 	@cached_property
@@ -671,7 +692,7 @@ class PlayerInChallenge:
 	
 	@cached_property
 	def history(self):
-		return self.challenge.chasys.PLAYERS[self.key]
+		return 
 		
 	@cached_property
 	def rank_ordinal(self):
@@ -695,8 +716,12 @@ class ChallengeSystem:
 		self.chalog = chalog
 		self.status = status
 		self.webhook_url = webhook_url
-		self.PLAYERS = self.__read_PLAYERS(player_data)
+		self.PLAYERS = self.__read_PLAYERS(player_data["active_players"])
+		self.top10 = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
 		self.CHALLENGES = self.__read_CHALLENGES()
+		
+		
+	# def apply_legacy(self):
 		
 		
 	###--------------------------Public.Methods-----------------------###
@@ -837,10 +862,9 @@ class ChallengeSystem:
 			return sorted_dict_of_chall_from_lines(lines)
 		
 		
-	def __read_PLAYERS(self, player_data):
-		legacy = player_data["legacy"]["top10"]
+	def __read_PLAYERS(self, active_players):
 		if self.chalog.exists():
-			return { key: Player.instance_with_rank_and_fill_legacy(key, value, legacy) for key, value in player_data["active"].items() }
+			return { key: Player(key, value) for key, value in active_players.items() }
 		else:
 			raise Exception(f"No existe {self.chalog}")
 		

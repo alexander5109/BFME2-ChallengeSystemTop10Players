@@ -1,5 +1,5 @@
 {
-    "dead": {
+    "never_played": {
         "EOL_SCORP": {
             "nicknames": ["Eol Scorpion"]
         },
@@ -10,7 +10,7 @@
             "nicknames": ["SNOWBL4CK", "D3ATH^G0D"]
         }
     },
-    "active": {
+    "active_players": {
         "VIOLENCE": {
             "nicknames": ["Violence"],
             "discord_ids": ["#violence4412"]
@@ -199,16 +199,16 @@
     "legacy": {
 		"date": "2021-03-21",
 		"top10" : {
-			"VITO": "10",
-			"DARYL": "9",
-			"TEMPT": "8",
-			"SCARECROW": "7",
-			"LAU": "6",
-			"IMPERIALIST": "5",
-			"AHWE": "4",
-			"OTTO": "3",
+			"ECTH": "1",
 			"SAURON": "2",
-			"ECTH": "1"
+			"OTTO": "3",
+			"AHWE": "4",
+			"IMPERIALIST": "5",
+			"LAU": "6",
+			"SCARECROW": "7",
+			"TEMPT": "8",
+			"DARYL": "9",
+			"VITO": "10"
 		}
     }
 }
