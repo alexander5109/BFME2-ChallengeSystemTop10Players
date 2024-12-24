@@ -196,6 +196,10 @@ class IChallengeEvent():
 	
 	
 	###--------------------------Public.Methods-----------------------###
+	def as_row(self):
+		columns = map(lambda x: str(x), [self.key, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
+		return ";".join(columns)+"\n"
+		
 	def post(self, confirmed=False):
 		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
 			return
@@ -264,10 +268,6 @@ class IChallengeEvent():
 			top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		return top10string
 	###--------------------------properties----------------------###
-	@cached_property
-	def as_row(self):
-		columns = map(lambda x: str(x), [self.key, self.version, self.winner.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
-		return ";".join(columns)+"\n"
 			
 	@cached_property
 	def fecha(self):
@@ -716,12 +716,12 @@ class ChallengeSystem:
 		
 	###--------------------------Public.Methods-----------------------###
 	def write_csv(self):
-		if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
-			return
+		# if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
+			# return
 			
 		supastring = "key;version;w_key;w_wins1v1;w_wins2v2;l_key;l_wins1v1;l_wins2v2;date;notes\n"
 		for cha in reversed(list(self.CHALLENGES.values())):
-			supastring += cha.as_row
+			supastring += cha.as_row()
 
 		with open(self.chacsv, mode='w', newline='', encoding='latin1') as file:
 			file.write(supastring)
