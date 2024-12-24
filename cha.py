@@ -199,7 +199,7 @@ class IChallengeEvent():
 			# self.chasys.top10list.insert(self.defender.rank, self.winner.history) 
 			
 			
-			self.chasys.top10list.pop(self.winner.history.get_rank()) 
+			self.chasys.top10list.pop(self.winner.rank) 
 			self.chasys.top10list.insert(self.loser.history.get_rank(), self.winner.history) 
 	
 	def _01_integrity_check(self): 
