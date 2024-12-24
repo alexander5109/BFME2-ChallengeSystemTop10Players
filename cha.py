@@ -85,7 +85,7 @@ class Player:
 		self.games_played_2v2 = 0
 		
 		
-	###--------------------------Public.Methods-----------------------###
+	###--------------------Player.Public.Methods----------------###
 	def get_status(self):
 		return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 		
@@ -110,7 +110,7 @@ class Player:
 			else:
 				return None
 		
-	###--------------------------Public.Properties-----------------------###
+	###--------------------Player.Public.Properties----------------###
 	@cached_property
 	def name(self):
 		return self.names[0]
@@ -131,7 +131,7 @@ class Player:
 	def fecha_de_alta(self):
 		return self.challenges[0]
 
-	###--------------------------Public.dundermethod-----------------------###
+	###--------------------Player.Dunder.Methods----------------###
 	def __lt__(self, other):
 		return self.key < other.key
 		
@@ -161,7 +161,7 @@ class Player:
 #"""---------------------------------ChallengeEvent.Class.02----------------------------"""#
 #------------------------------------------------------------------------------------------#
 # Define an interface
-class IChallengeEvent():
+class ChallengeEvent():
 	def __init__(self, chasys, key, row):
 		self.chasys = chasys
 		self.key = key
@@ -176,26 +176,24 @@ class IChallengeEvent():
 		self._02_impact_players_historial()
 		self._03_impact_system_top10_rank()
 		
-		self.top10string = self.__05_freeze_current_top10string()
+		self.top10string = self.__get_top10string()
 		# ic(self.chasys.top10list, len(self.chasys.top10list))
 		# input("Continuar?")
 	
-	###--------------------------ClassStatic.Methods-----------------------###
-	
+	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
 	def new_from_row(cls, chasys, key, version, row_dict):
 		if version == "NO_SCORE_MODE":
-			return ChallengeNoScoreMode(chasys, key, row_dict)
+			return NoScoreChallenge(chasys, key, row_dict)
 		elif version == "KICK_ADD_MODE":
-			return ChallengeKickAddMode(chasys, key, row_dict)
+			return KickAddChallenge(chasys, key, row_dict)
 		else:
-			return ChallengeNormal(chasys, key, row_dict)
+			return NormalChallenge(chasys, key, row_dict)
 					
 	
 	
 	
-	
-	###--------------------------Public.Methods-----------------------###
+	###--------------------ChallengeEvent.Public.Methods-------------###
 	def as_row(self):
 		columns = map(lambda x: str(x), [self.key, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
 		return ";".join(columns)+"\n"
@@ -213,7 +211,7 @@ class IChallengeEvent():
 
 
 			
-	###--------------------------Protected.Methods-----------------------###
+	###--------------------ChallengeEvent.Protected.Methods-------------###
 	def _01_integrity_check(self): 
 		raise Exception("Please implement me")
 		
@@ -221,7 +219,7 @@ class IChallengeEvent():
 		raise Exception("Please implement me")
 
 	def _03_impact_system_top10_rank(self):
-		##Normal scenario. #overriden by ChallengeKickAddMode
+		##Normal scenario. #overriden by KickAddChallenge
 		if self.challenger is self.winner:
 			self.chasys.top10list.remove(self.winner.history) 
 			self.chasys.top10list.insert(self.loser.history.get_rank(), self.winner.history) 
@@ -257,9 +255,9 @@ class IChallengeEvent():
 			"timestamp": datetime.now(UTC).isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
-	###--------------------------Private.Methods-----------------------###
-				
-	def __05_freeze_current_top10string(self):
+		
+	###--------------------ChallengeEvent.Private.Methods-------------###
+	def __get_top10string(self):
 		top10string = "\t\tTOP 10\n"
 		for i in range(self.chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
 			if i >= len(self.chasys.top10list):
@@ -267,8 +265,9 @@ class IChallengeEvent():
 			player = self.chasys.top10list[i]
 			top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		return top10string
-	###--------------------------properties----------------------###
-			
+		
+		
+	###--------------------ChallengeEvent.Properties-------------###
 	@cached_property
 	def fecha(self):
 		return self.date.strftime('%Y-%m-%d')
@@ -298,7 +297,7 @@ class IChallengeEvent():
 		return self.winner if self.challenger is self.loser else self.loser
 		
 	
-	###--------------------------Public.dundermethod-----------------------###
+	###--------------------ChallengeEvent.Dunder.Methods----------------###
 	def __lt__(self, other):
 		return self.key < other.key
 		
@@ -324,10 +323,10 @@ class IChallengeEvent():
 #------------------------------------------------------------------------------------------#
 #"""---------------------------------NormalChallenge.Class.02----------------------------"""#
 #------------------------------------------------------------------------------------------#
-class ChallengeNormal(IChallengeEvent):
+class NormalChallenge(ChallengeEvent):
 	embed_color = 0x5DD9DF ## Blueish
 	
-	###--------------------------properties----------------------###
+	###--------------------NormalChallenge.Properties-------------###
 	@cached_property
 	def embed(self):
 		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
@@ -379,7 +378,7 @@ class ChallengeNormal(IChallengeEvent):
 	def replays_dir(self):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
-	###--------------------------Protected.Methods-----------------------###
+	###--------------------NormalChallenge.Protected.Methods-------------###
 	def _01_integrity_check(self):
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
@@ -479,12 +478,12 @@ class ChallengeNormal(IChallengeEvent):
 	
 
 #------------------------------------------------------------------------------------------#
-#"""------------------------------ChallengeNoScoreMode.Class.02------------------------"""#
+#"""------------------------------NoScoreChallenge.Class.02------------------------"""#
 #------------------------------------------------------------------------------------------#
-class ChallengeNoScoreMode(IChallengeEvent):
+class NoScoreChallenge(ChallengeEvent):
 	embed_color = 0xFFA500 ## BNomEacuerdo
 	
-	###--------------------------properties----------------------###
+	###---------------NoScoreChallenge.Properties---------------###
 	@cached_property
 	def embed(self):
 		return self._08_base_embed() | {
@@ -514,7 +513,8 @@ class ChallengeNoScoreMode(IChallengeEvent):
 					"inline": False
 				}],
 		}
-	###--------------------------Protected.Methods-----------------------###
+	
+	###---------------NoScoreChallenge.Protected.Methods---------------###
 	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
@@ -556,12 +556,12 @@ class ChallengeNoScoreMode(IChallengeEvent):
 	
 
 #------------------------------------------------------------------------------------------#
-#"""------------------------------ChallengeNoScoreMode.Class.02------------------------"""#
+#"""------------------------------NoScoreChallenge.Class.02------------------------"""#
 #------------------------------------------------------------------------------------------#
-class ChallengeKickAddMode(IChallengeEvent):
+class KickAddChallenge(ChallengeEvent):
 	embed_color = 0x981D98 ## BNomEacuerdo
 	
-	###--------------------------properties----------------------###
+	###----------------KickAddChallenge.Protected.Properties-------------###
 	@cached_property
 	def embed(self):
 		return self._08_base_embed() | {
@@ -592,9 +592,7 @@ class ChallengeKickAddMode(IChallengeEvent):
 			],
 		}
 		
-		
-		
-	###--------------------------Protected.Methods-----------------------###
+	###----------------KickAddChallenge.Protected.Methods-------------###
 	def _01_integrity_check(self):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
@@ -659,7 +657,7 @@ class PlayerInChallenge:
 		self.history.challenges.append(self.challenge)
 		self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
 	
-	###--------------------------Properties-----------------------###
+	###----------------PlayerInChallenge.Properties-------------###
 	@cached_property
 	def wins(self):
 		return self.wins1v1 + self.wins2v2
@@ -691,7 +689,7 @@ class PlayerInChallenge:
 		
 		return ordinal.get(self.rank, "from outside the list")
 
-	###--------------------------Public.dundermethod-----------------------###
+	###--------------------PlayerInChallenge.Dunder.Methods----------------###
 	def __repr__(self):
 		return f"|{self.history.key}|"
 
@@ -714,7 +712,7 @@ class ChallengeSystem:
 		self.CHALLENGES = self.__read_CHALLENGES()
 		
 		
-	###--------------------------Public.Methods-----------------------###
+	###----------------ChallengeSystem.Public.Methods------------###
 	def write_csv(self):
 		# if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
 			# return
@@ -761,8 +759,6 @@ class ChallengeSystem:
 		for chakey in range(start_with, end_with+1):
 			self.CHALLENGES[chakey].post(confirmed=True)
 			time.sleep(60*7)
-			
-			
 			
 	def execute_argv_operations_if_any(self, argv):
 		def __get_validated_argv_dict(argv):
@@ -819,8 +815,7 @@ class ChallengeSystem:
 		# ic(self.PLAYERS[pname].loses2v2_total)
 
 	
-	###--------------------------Private.Methods-----------------------###
-	
+	###----------------ChallengeSystem.Private.Methods------------###
 	def __read_CHALLENGES(self):
 		def sorted_dict_of_chall_from_lines(lines):
 			headers = lines[0].strip().split(';')
@@ -832,7 +827,7 @@ class ChallengeSystem:
 				row_dict = {headers[i]: row[i] for i in range(len(headers))}
 				key = int(row_dict['key'])
 				version = row_dict['version']
-				dataaaa[key] = IChallengeEvent.new_from_row(self, key, version, row_dict)
+				dataaaa[key] = ChallengeEvent.new_from_row(self, key, version, row_dict)
 			return dataaaa
 			
 		if not self.chacsv.exists() or self.chacsv.stat().st_size == 0:
@@ -843,7 +838,6 @@ class ChallengeSystem:
 				lines = file.readlines()
 			return sorted_dict_of_chall_from_lines(lines)
 		
-		
 	def __read_PLAYERS(self, active_players):
 		if self.chalog.exists():
 			return { key: Player(self, key, value) for key, value in active_players.items() }
@@ -851,8 +845,7 @@ class ChallengeSystem:
 			raise Exception(f"No existe {self.chalog}")
 		
 		
-
-	###------------------------------Statics-----------------------###
+	###----------------ChallengeSystem.Static.Methods------------###
 	# @staticmethod
 	# def compress_folder(folder_path):
 		# if folder_path.exists():
