@@ -26,12 +26,6 @@ import time
 		
 		
 		
-def get_index_or_append_if_new(object, list):
-	try:
-		return list.index(object)
-	except ValueError:
-		list.append(object)
-		return get_index_or_append_if_new(object, list)
 		
 
 def get_int(msg, indent=0, show_error=True, min=None, max=None):
@@ -64,9 +58,9 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 	
 	
 #-------------------------------------------------------------------------------------------------------------#
-#"""-------------------------------------------Player.Class.01---------------------------------------------"""#
+#"""-------------------------------------------PlayerHistory.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
-class Player:
+class PlayerHistory:
 	def __init__(self, chasys, key, value):
 		self.chasys = chasys
 		self.key = key
@@ -85,7 +79,23 @@ class Player:
 		self.games_played_2v2 = 0
 		
 		
-	###--------------------Player.Public.Methods----------------###
+		
+	###----------------PlayerHistory.Public.Methods------------###
+	def append_cha(self, challenge):
+		self.challenges.append(challenge)
+		self.games_played_total += challenge.games_total
+		self.games_played_1v1 += challenge.games1v1
+		self.games_played_2v2 += challenge.games2v2
+		
+	def append_cha_win_lose(self, player_in_chall):
+		self.wins_total += player_in_chall.wins
+		self.wins1v1_total += player_in_chall.wins1v1
+		self.wins2v2_total += player_in_chall.wins2v2
+		if player_in_chall is player_in_chall.challenge.winner:
+			self.cha_wins += 1
+		else:
+			self.cha_loses += 1
+	
 	def get_status(self):
 		return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 		
@@ -110,7 +120,7 @@ class Player:
 			else:
 				return None
 		
-	###--------------------Player.Public.Properties----------------###
+	###--------------------PlayerHistory.Public.Properties----------------###
 	@cached_property
 	def name(self):
 		return self.names[0]
@@ -131,7 +141,7 @@ class Player:
 	def fecha_de_alta(self):
 		return self.challenges[0]
 
-	###--------------------Player.Dunder.Methods----------------###
+	###--------------------PlayerHistory.Dunder.Methods----------------###
 	def __lt__(self, other):
 		return self.key < other.key
 		
@@ -171,14 +181,12 @@ class ChallengeEvent():
 		self.notes = row['notes']
 		self.winner = PlayerInChallenge(self, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
 		self.loser = PlayerInChallenge(self, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
-		self._01_integrity_check()
-		
-		self._02_impact_players_historial()
-		self._03_impact_system_top10_rank()
-		
+		self._init_01_integrity_check()
+		self._init_02_impact_players_historial()
+		self._init_03_impact_system_top10_rank()
 		self.top10string = self.__get_top10string()
-		# ic(self.chasys.top10list, len(self.chasys.top10list))
-		# input("Continuar?")
+	
+	
 	
 	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
@@ -212,35 +220,17 @@ class ChallengeEvent():
 
 			
 	###--------------------ChallengeEvent.Protected.Methods-------------###
-	def _01_integrity_check(self): 
-		raise Exception("Please implement me")
-		
-	def _02_impact_players_historial(self): 
-		raise Exception("Please implement me")
-
-	def _03_impact_system_top10_rank(self):
-		##Normal scenario. #overriden by KickAddChallenge
+	def _init_03_impact_system_top10_rank(self):
+		"ChallengeEvent - winner_takes_over"
 		if self.challenger is self.winner:
-			self.chasys.top10list.remove(self.winner.history) 
-			self.chasys.top10list.insert(self.loser.history.get_rank(), self.winner.history) 
+			self.chasys._apply_a_take_over(self)
 			
-	def _04_get_my_report(self): 
-		raise Exception("Please implement me")
-	
 	def _05_str_who_challenged_who(self):
-		"""Comportamiento normal"""
+		"ChallengeEvent - Comportamiento normal"
 		return (
 			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
 			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
 		)
-		
-	def _06_get_my_post(self): 
-		raise Exception("Please implement me")
-		
-		
-	def _07_rename_existing_replaypack(self, torename, compress):
-		raise Exception("Please implement me")
-		
 		
 	def _08_base_embed(self):
 		return {
@@ -259,6 +249,7 @@ class ChallengeEvent():
 	###--------------------ChallengeEvent.Private.Methods-------------###
 	def __get_top10string(self):
 		top10string = "\t\tTOP 10\n"
+		# ic(self.chasys.top10list)
 		for i in range(self.chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
 			if i >= len(self.chasys.top10list):
 				continue
@@ -379,35 +370,25 @@ class NormalChallenge(ChallengeEvent):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------NormalChallenge.Protected.Methods-------------###
-	def _01_integrity_check(self):
+	def _init_01_integrity_check(self):
+		"NormalChallenge - don't log me retarded numbers"
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
 		if self.winner.wins <= self.loser.wins:
 			raise Exception(f"Error de integridad: Como es posible que el ganador no tenga mas victorias que el perdedor?")
 			
-	def _02_impact_players_historial(self):
-		self.winner.history.cha_wins += 1
-		self.winner.history.wins_total += self.winner.wins
-		self.winner.history.wins1v1_total += self.winner.wins1v1
-		self.winner.history.wins2v2_total += self.winner.wins2v2
+	def _init_02_impact_players_historial(self):
+		"NormalChallenge is the only one that impacts historial"
+		self.winner.history.append_cha(self)
+		self.loser.history.append_cha(self)
+		self.winner.history.append_cha_win_lose(self.winner)
+		self.loser.history.append_cha_win_lose(self.loser)
+		
+	def _init_03_impact_system_top10_rank(self):
+		"NormalChallenge - winner_takes_over"
+		if self.challenger is self.winner:
+			self.chasys._apply_a_take_over(self)
 
-		self.loser.history.cha_loses += 1
-		self.loser.history.wins_total += self.loser.wins
-		self.loser.history.wins1v1_total += self.loser.wins1v1
-		self.loser.history.wins2v2_total += self.loser.wins2v2
-		
-		self.winner.history.games_played_total += self.games_total
-		self.winner.history.games_played_1v1 += self.games1v1
-		self.winner.history.games_played_2v2 += self.games2v2
-		
-		self.loser.history.games_played_total += self.games_total
-		self.loser.history.games_played_1v1 += self.games1v1
-		self.loser.history.games_played_2v2 += self.games2v2
-
-	def _03_impact_system_top10_rank(self):
-		"""Comportamiento de challenger taking spot"""
-		return super()._03_impact_system_top10_rank()
-		
 	def _04_get_my_report(self):
 		def __report_01_report_defenseortakeover():
 			flawlessly = "flawlessly " if self.loser.wins == 0 else ""
@@ -515,18 +496,16 @@ class NoScoreChallenge(ChallengeEvent):
 		}
 	
 	###---------------NoScoreChallenge.Protected.Methods---------------###
-	def _01_integrity_check(self):
+	def _init_01_integrity_check(self):
+		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 			
-	def _02_impact_players_historial(self):
-		"DodgedChallenge is designed to not affect player winrate"
-		pass
+	def _init_02_impact_players_historial(self):
+		"NoScoreChallenge is designed to not affect player winrate"
+		self.winner.history.append_cha(self)
+		self.loser.history.append_cha(self)
 		
-	def _03_impact_system_top10_rank(self):
-		"""Comportamiento de challenger taking spot"""
-		return super()._03_impact_system_top10_rank()
-			
 	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
@@ -593,20 +572,19 @@ class KickAddChallenge(ChallengeEvent):
 		}
 		
 	###----------------KickAddChallenge.Protected.Methods-------------###
-	def _01_integrity_check(self):
+	def _init_01_integrity_check(self):
+		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
-	def _02_impact_players_historial(self):
-		"KickAddMode is designed to not affect player winrate"
-		pass
-
-	def _03_impact_system_top10_rank(self):
-		##KickAdd scenario.
-		self.chasys.top10list.remove(self.loser.history)
-		self.chasys.top10list.remove(self.winner.history)
-		self.chasys.top10list.insert(self.chasys.TOP_OF, self.loser.history)
-		self.chasys.top10list.insert(self.chasys.TOP_OF, self.winner.history)
+	def _init_02_impact_players_historial(self):
+		"KickAddChallenge is designed to not affect player winrate"
+		self.winner.history.append_cha(self)
+		self.loser.history.append_cha(self)
+		
+	def _init_03_impact_system_top10_rank(self):
+		"KickAddChallenge - unique method"
+		self.chasys._apply_a_kick_add(self)
 		
 	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
@@ -654,9 +632,7 @@ class PlayerInChallenge:
 		self.history = self.challenge.chasys.PLAYERS[key]
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
-		self.history.challenges.append(self.challenge)
-		self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
-	
+		self.rank = self.challenge.chasys._get_index_or_append_if_new(self.history)
 	###----------------PlayerInChallenge.Properties-------------###
 	@cached_property
 	def wins(self):
@@ -711,6 +687,30 @@ class ChallengeSystem:
 		self.top10list = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
 		self.CHALLENGES = self.__read_CHALLENGES()
 		
+		
+	###----------------ChallengeSystem.Protected.Methods------------###
+	def _get_index_or_append_if_new(self, player):
+		try:
+			return self.top10list.index(player)
+		except ValueError:
+			self.top10list.append(player)
+			return self.top10list.index(player)
+	
+	
+	def _apply_a_kick_add(self, challenge):
+		if not isinstance(challenge, KickAddChallenge):
+			raise Exception(f"Wtf class? {type(challenge)}")
+		self.top10list.remove(challenge.loser.history)
+		self.top10list.remove(challenge.winner.history)
+		self.top10list.insert(self.TOP_OF, challenge.loser.history)
+		self.top10list.insert(self.TOP_OF, challenge.winner.history)
+			
+			
+	def _apply_a_take_over(self, challenge):
+		if not isinstance(challenge, (NormalChallenge, NoScoreChallenge)):
+			raise Exception(f"Wtf class? {type(challenge)}")
+		self.top10list.remove(challenge.winner.history) 
+		self.top10list.insert(challenge.loser.history.get_rank(), challenge.winner.history) 
 		
 	###----------------ChallengeSystem.Public.Methods------------###
 	def write_csv(self):
@@ -840,7 +840,7 @@ class ChallengeSystem:
 		
 	def __read_PLAYERS(self, active_players):
 		if self.chalog.exists():
-			return { key: Player(self, key, value) for key, value in active_players.items() }
+			return { key: PlayerHistory(self, key, value) for key, value in active_players.items() }
 		else:
 			raise Exception(f"No existe {self.chalog}")
 		
