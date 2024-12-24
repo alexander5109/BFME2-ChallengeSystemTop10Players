@@ -172,11 +172,28 @@ class IChallengeEvent():
 		self.winner = PlayerInChallenge(self, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
 		self.loser = PlayerInChallenge(self, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
 		self._01_integrity_check()
+		
 		self._02_impact_players_historial()
-		self._03_impact_players_top10_rank()
-		self.top10string = self.__05_freeze_current_top_10_string()
+		self._03_impact_system_top10_rank()
+		
+		self.top10string = self.__05_freeze_current_top10string()
 		# ic(self.chasys.top10list, len(self.chasys.top10list))
 		# input("Continuar?")
+	
+	###--------------------------ClassStatic.Methods-----------------------###
+	
+	@classmethod
+	def new_from_row(cls, chasys, key, version, row_dict):
+		if version == "NO_SCORE_MODE":
+			return ChallengeNoScoreMode(chasys, key, row_dict)
+		elif version == "KICK_ADD_MODE":
+			return ChallengeKickAddMode(chasys, key, row_dict)
+		else:
+			return ChallengeNormal(chasys, key, row_dict)
+					
+	
+	
+	
 	
 	###--------------------------Public.Methods-----------------------###
 	def post(self, confirmed=False):
@@ -199,10 +216,10 @@ class IChallengeEvent():
 	def _02_impact_players_historial(self): 
 		raise Exception("Please implement me")
 
-	def _03_impact_players_top10_rank(self):
+	def _03_impact_system_top10_rank(self):
 		##Normal scenario. #overriden by ChallengeKickAddMode
 		if self.challenger is self.winner:
-			self.chasys.top10list.pop(self.winner.rank) 
+			self.chasys.top10list.remove(self.winner.history) 
 			self.chasys.top10list.insert(self.loser.history.get_rank(), self.winner.history) 
 			
 	def _04_get_my_report(self): 
@@ -238,7 +255,7 @@ class IChallengeEvent():
 		}
 	###--------------------------Private.Methods-----------------------###
 				
-	def __05_freeze_current_top_10_string(self):
+	def __05_freeze_current_top10string(self):
 		top10string = "\t\tTOP 10\n"
 		for i in range(self.chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
 			if i >= len(self.chasys.top10list):
@@ -388,9 +405,9 @@ class ChallengeNormal(IChallengeEvent):
 		self.loser.history.games_played_1v1 += self.games1v1
 		self.loser.history.games_played_2v2 += self.games2v2
 
-	def _03_impact_players_top10_rank(self):
+	def _03_impact_system_top10_rank(self):
 		"""Comportamiento de challenger taking spot"""
-		return super()._03_impact_players_top10_rank()
+		return super()._03_impact_system_top10_rank()
 		
 	def _04_get_my_report(self):
 		def __report_01_report_defenseortakeover():
@@ -506,9 +523,9 @@ class ChallengeNoScoreMode(IChallengeEvent):
 		"DodgedChallenge is designed to not affect player winrate"
 		pass
 		
-	def _03_impact_players_top10_rank(self):
+	def _03_impact_system_top10_rank(self):
 		"""Comportamiento de challenger taking spot"""
-		return super()._03_impact_players_top10_rank()
+		return super()._03_impact_system_top10_rank()
 			
 	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
@@ -586,10 +603,10 @@ class ChallengeKickAddMode(IChallengeEvent):
 		"KickAddMode is designed to not affect player winrate"
 		pass
 
-	def _03_impact_players_top10_rank(self):
+	def _03_impact_system_top10_rank(self):
 		##KickAdd scenario.
-		self.chasys.top10list.pop(self.loser.rank)
-		self.chasys.top10list.pop(self.winner.history.get_rank())
+		self.chasys.top10list.remove(self.loser.history)
+		self.chasys.top10list.remove(self.winner.history)
 		self.chasys.top10list.insert(self.chasys.TOP_OF, self.loser.history)
 		self.chasys.top10list.insert(self.chasys.TOP_OF, self.winner.history)
 		
@@ -815,12 +832,7 @@ class ChallengeSystem:
 				row_dict = {headers[i]: row[i] for i in range(len(headers))}
 				key = int(row_dict['key'])
 				version = row_dict['version']
-				if version == "NO_SCORE_MODE":
-					dataaaa[key] = ChallengeNoScoreMode(self, key, row_dict)
-				elif version == "KICK_ADD_MODE":
-					dataaaa[key] = ChallengeKickAddMode(self, key, row_dict)
-				else:
-					dataaaa[key] = ChallengeNormal(self, key, row_dict)
+				dataaaa[key] = IChallengeEvent.new_from_row(self, key, version, row_dict)
 			return dataaaa
 			
 		if not self.chacsv.exists() or self.chacsv.stat().st_size == 0:
@@ -877,7 +889,7 @@ SISTEMA = ChallengeSystem(
 if __name__ == "__main__":
 	SISTEMA.write_chalog();
 	SISTEMA.write_status();
-	SISTEMA.write_embeds();
+	# SISTEMA.write_embeds();
 	# SISTEMA.write_csv();
 	
 	
