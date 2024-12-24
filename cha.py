@@ -222,6 +222,20 @@ class IChallengeEvent():
 	def _07_rename_existing_replaypack(self, torename, compress):
 		raise Exception("Please implement me")
 		
+		
+	def _08_base_embed(self):
+		return {
+			"color": self.embed_color,
+			"title": "A new Challenge has been registered!",
+			"description": (
+				"```diff\n"
+				f"- Challenge № {self.key}\n"
+				f"- Update {self.fecha}\n"
+				"```"
+			),
+			"timestamp": datetime.now(UTC).isoformat(),
+			"footer": {"text": "Let the challenges continue!"},
+		}
 	###--------------------------Private.Methods-----------------------###
 				
 	def __05_freeze_current_top_10_string(self):
@@ -266,21 +280,6 @@ class IChallengeEvent():
 	def defender(self):
 		return self.winner if self.challenger is self.loser else self.loser
 		
-	@cached_property
-	def embed(self):
-		return {
-			"color": self.embed_color,
-			"title": "A new Challenge has been registered!",
-			"description": (
-				"```diff\n"
-				f"- Challenge № {self.key}\n"
-				f"- Update {self.fecha}\n"
-				"```"
-			),
-			"timestamp": datetime.now(UTC).isoformat(),
-			"footer": {"text": "Let the challenges continue!"},
-		}
-		
 	
 	###--------------------------Public.dundermethod-----------------------###
 	def __lt__(self, other):
@@ -312,6 +311,53 @@ class ChallengeNormal(IChallengeEvent):
 	embed_color = 0x5DD9DF ## Blueish
 	
 	###--------------------------properties----------------------###
+	@cached_property
+	def embed(self):
+		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
+		if self.games2v2:
+			score += (
+				f"\n- **Score 2vs2**: {self.winner.wins2v2}-{self.loser.wins2v2} for **{self.winner.history.name}**"
+				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
+			)
+		embed = self._08_base_embed() | {
+			"fields": [{
+					"name": "Players",
+					"value": (
+						f"- Challenger: **{self.challenger.history.name} ({self.challenger.rank_ordinal})**"
+						f"\n- Defender: **{self.defender.history.name} ({self.defender.rank_ordinal})**"
+					),
+					"inline": False
+				},{
+					"name": "Scores",
+					"value": score,
+					"inline": False
+				},{
+					"name": "Outcome",
+					"value": (
+						"```diff\n"
+						f"+ {self.winner.history.name} {'flawlessly ' if self.loser.wins == 0 else ''}{'defended' if self.defender is self.winner else 'has taken over'} the {self.defender.rank_ordinal} spot!\n"
+						"```"
+					),
+					"inline": False
+				},{
+					"name": "Games Played In",
+					"value": f"{self.version}",
+					"inline": True
+				},{
+					"name": "Let the Challenges Continue!",
+					"value": f"```diff\n{self.top10string}```",
+					"inline": False
+				}
+			],
+		}
+		if self.notes:
+			embed["fields"].insert(-2,{
+				"name": "Comments: ",
+				"value": f"*- {self.notes}*",
+				"inline": False
+			})
+		return embed
+		
 	@cached_property
 	def replays_dir(self):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
@@ -391,55 +437,12 @@ class ChallengeNormal(IChallengeEvent):
 		if response.status_code != 200:
 			return response
 			
-		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
-		if self.games2v2:
-			score += (
-				f"\n- **Score 2vs2**: {self.winner.wins2v2}-{self.loser.wins2v2} for **{self.winner.history.name}**"
-				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
-			)
-		embed = self.embed | {
-			"fields": [{
-					"name": "Players",
-					"value": (
-						f"- Challenger: **{self.challenger.history.name} ({self.challenger.rank_ordinal})**"
-						f"\n- Defender: **{self.defender.history.name} ({self.defender.rank_ordinal})**"
-					),
-					"inline": False
-				},{
-					"name": "Scores",
-					"value": score,
-					"inline": False
-				},{
-					"name": "Outcome",
-					"value": (
-						"```diff\n"
-						f"+ {self.winner.history.name} {'flawlessly ' if self.loser.wins == 0 else ''}{'defended' if self.defender is self.winner else 'has taken over'} the {self.defender.rank_ordinal} spot!\n"
-						"```"
-					),
-					"inline": False
-				},{
-					"name": "Games Played In",
-					"value": f"{self.version}",
-					"inline": True
-				},{
-					"name": "Let the Challenges Continue!",
-					"value": f"```diff\n{self.top10string}```",
-					"inline": False
-				}
-			],
-		}
-		if self.notes:
-			embed["fields"].insert(-2,{
-				"name": "Comments: ",
-				"value": f"*- {self.notes}*",
-				"inline": False
-			})
 		webhook_message = response.json()
 		message_id = webhook_message["id"]
 		webhook_url_edit = f"{self.chasys.webhook_url}/messages/{message_id}"
 		edit_payload = {
 			"content": discord_message,
-			"embeds": [embed]
+			"embeds": [self.embed]
 		}
 		return requests.patch(
 			webhook_url_edit,
@@ -464,31 +467,10 @@ class ChallengeNormal(IChallengeEvent):
 class ChallengeNoScoreMode(IChallengeEvent):
 	embed_color = 0xFFA500 ## BNomEacuerdo
 	
-	###--------------------------Protected.Methods-----------------------###
-	def _01_integrity_check(self):
-		if self.games_total:
-			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
-			
-	def _02_impact_players_historial(self):
-		"DodgedChallenge is designed to not affect player winrate"
-		pass
-		
-	def _03_impact_players_top10_rank(self):
-		"""Comportamiento de challenger taking spot"""
-		return super()._03_impact_players_top10_rank()
-			
-	def _04_get_my_report(self):
-		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
-		return (
-			f"{self._05_str_who_challenged_who()}"
-			f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
-			f"\n\n+ {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
-			f"{commment_line}"
-			f"\n\nNo wins or losses have been scored."
-		)
-			
-	def _06_get_my_post(self, discord_message):
-		embed = self.embed | {
+	###--------------------------properties----------------------###
+	@cached_property
+	def embed(self):
+		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
 					"value": (
@@ -515,15 +497,39 @@ class ChallengeNoScoreMode(IChallengeEvent):
 					"inline": False
 				}],
 		}
+	###--------------------------Protected.Methods-----------------------###
+	def _01_integrity_check(self):
+		if self.games_total:
+			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
+			
+	def _02_impact_players_historial(self):
+		"DodgedChallenge is designed to not affect player winrate"
+		pass
+		
+	def _03_impact_players_top10_rank(self):
+		"""Comportamiento de challenger taking spot"""
+		return super()._03_impact_players_top10_rank()
+			
+	def _04_get_my_report(self):
+		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
+		return (
+			f"{self._05_str_who_challenged_who()}"
+			f"\n\nSpotUndefended: {self.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
+			f"\n\n+ {self.challenger.history.name} has taken over the {self.defender.rank_ordinal} spot!"
+			f"{commment_line}"
+			f"\n\nNo wins or losses have been scored."
+		)
+			
+	def _06_get_my_post(self, discord_message):
 		if self.notes:
-			embed["fields"].insert(-2,{
+			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
 				"value": f"*- {self.notes}*",
 				"inline": False
 			})
 		payload = {
 			"content": discord_message,
-			"embeds": [embed]
+			"embeds": [self.embed]
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 			
@@ -539,6 +545,38 @@ class ChallengeKickAddMode(IChallengeEvent):
 	embed_color = 0x981D98 ## BNomEacuerdo
 	
 	###--------------------------properties----------------------###
+	@cached_property
+	def embed(self):
+		return self._08_base_embed() | {
+			"fields": [{
+					"name": "Kick-Add Update",
+					"value": (
+						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
+					),
+					"inline": False
+				},{
+					"name": "Outcome",
+					"value": (
+						"```diff\n"
+						f"- {self.defender.history.name} ({self.defender.rank_ordinal}) has been kicked from the list.\n"
+						f"+ {self.challenger.history.name} has been set to in the 10th spot.\n"
+						"```"
+					),
+					"inline": False
+				},{
+					"name": "Scores",
+					"value": "- No wins or losses have been scored.",
+					"inline": False
+				},{
+					"name": "Let the Challenges Continue!",
+					"value": f"```diff\n{self.top10string}```",
+					"inline": False
+				}
+			],
+		}
+		
+		
+		
 	###--------------------------Protected.Methods-----------------------###
 	def _01_integrity_check(self):
 		if self.games_total:
@@ -574,42 +612,15 @@ class ChallengeKickAddMode(IChallengeEvent):
 			
 			
 	def _06_get_my_post(self, discord_message):
-		embed = self.embed | {
-			"fields": [{
-					"name": "Kick-Add Update",
-					"value": (
-						f"- Since Challenge {self.defender.previous_challenge.key}, {self.defender.history.name} has not played any game or challenge in {self.defender.days_since_last_chall} days."
-					),
-					"inline": False
-				},{
-					"name": "Outcome",
-					"value": (
-						"```diff\n"
-						f"- {self.defender.history.name} ({self.defender.rank_ordinal}) has been kicked from the list.\n"
-						f"+ {self.challenger.history.name} has been set to in the 10th spot.\n"
-						"```"
-					),
-					"inline": False
-				},{
-					"name": "Scores",
-					"value": "- No wins or losses have been scored.",
-					"inline": False
-				},{
-					"name": "Let the Challenges Continue!",
-					"value": f"```diff\n{self.top10string}```",
-					"inline": False
-				}
-			],
-		}
 		if self.notes:
-			embed["fields"].insert(-2,{
+			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
 				"value": f"*- {self.notes}*",
 				"inline": False
 			})
 		payload = {
 			"content": discord_message,
-			"embeds": [embed]
+			"embeds": [self.embed]
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 
@@ -704,6 +715,13 @@ class ChallengeSystem:
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
+			
+	def write_embeds(self):
+		all_instances = {cha.key: cha.embed for cha in reversed(self.CHALLENGES.values())}
+		filepath = r"output\embeds.json"
+		with open(filepath, "w") as json_file:
+			json.dump(all_instances, json_file, indent=4)
+			
 			
 	def write_chalog(self):
 		super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
@@ -859,6 +877,7 @@ SISTEMA = ChallengeSystem(
 if __name__ == "__main__":
 	SISTEMA.write_chalog();
 	SISTEMA.write_status();
+	SISTEMA.write_embeds();
 	# SISTEMA.write_csv();
 	
 	
