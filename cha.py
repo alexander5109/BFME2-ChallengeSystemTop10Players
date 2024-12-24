@@ -839,10 +839,7 @@ class ChallengeSystem:
 			return sorted_dict_of_chall_from_lines(lines)
 		
 	def __read_PLAYERS(self, active_players):
-		if self.chalog.exists():
-			return { key: PlayerHistory(self, key, value) for key, value in active_players.items() }
-		else:
-			raise Exception(f"No existe {self.chalog}")
+		return { key: PlayerHistory(self, key, value) for key, value in active_players.items() }
 		
 		
 	###----------------ChallengeSystem.Static.Methods------------###
