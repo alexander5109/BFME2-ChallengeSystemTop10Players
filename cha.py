@@ -629,8 +629,6 @@ class PlayerInChallenge:
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
 		self.history.challenges.append(self.challenge)
-		# self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
-		# self.rank = self.challenge.chasys.top10list.index(key)
 		self.rank = get_index_or_append_if_new(self.history, self.challenge.chasys.top10list)
 	
 	###--------------------------Properties-----------------------###
