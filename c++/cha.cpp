@@ -45,6 +45,20 @@ string readFile(const string& filePath) {
     return string((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 }
 
+
+template <typename K, typename V>
+void print_map_and_wait(const std::map<K, V>& m) {
+    for (const auto& pair : m) {
+        std::cout << pair.first << ": " << pair.second << std::endl;
+    }
+	
+    std::cout << "Press something to continue...";
+    std::cin.get();  // Waits for user input (any key press
+}
+
+
+
+
 int get_int(const string& msg, int indent, bool show_error, int min, int max) {
 	string ingreso;
 	int num;
@@ -190,7 +204,8 @@ public:
 			key(key),
 			version(row.at("version")),
 			fecha(row.at("date")),
-			notes(row.at("notes")),
+			// notes(row.at("notes")),
+			notes(row["notes"]),
 			winner(PlayerInChallenge(*this, row.at("w_key"), row.at("w_wins1v1"), row.at("w_wins2v2"))),
 			loser(PlayerInChallenge(*this, row.at("l_key"), row.at("l_wins1v1"), row.at("l_wins2v2")))
 		{
@@ -391,6 +406,8 @@ private:
 		vector<string> headers;
 		vector<vector<string>> rows;
 
+		// cout << "11, sortedDictOfChallFromLines" << endl;
+			
 		// Parse headers
 		istringstream headerStream(lines[0]);
 		string header;
@@ -424,12 +441,19 @@ private:
 				}
 			}
 			
+			// cout << "22, DEBUG" << endl;
 			// Extract the key and version
 			int key = stoi(rowDict.at("key"));
 			// string version = rowDict.at("version");
 
+			// cout << "33, DEBUG" << endl;
 			// Create the ChallengeEvent and add it to the map
+			
+			// print_map_and_wait(rowDict);
+			
 			dataaaa.emplace(key, ChallengeEvent(*this, key, rowDict));
+			
+			// cout << "44, success instancing ChallengeEvent" << endl;
 		}
 		return dataaaa;
 	};
