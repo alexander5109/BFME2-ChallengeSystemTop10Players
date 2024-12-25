@@ -141,45 +141,100 @@ class PlayerHistory {
 ----------------------------------------------------*/
 class ChallengeSystem {
   public:
-	int TOP_OF;
+	int TOP_OF = 9;
 	string chareps;
 	string chacsv;
 	string chalog;
 	string status;
 	string webhook_url;
 	map<string, PlayerHistory> PLAYERS;
-	// vector<string> top10list;
+	vector<PlayerHistory*> top10list;
 	// vector<string> CHALLENGES;
 	
 	// Constructor
 	ChallengeSystem(const string& chareps, const string& chacsv, const string& chalog, const string& status, const string& webhook_url, const json player_data)
-		: TOP_OF(9), chareps(chareps), chacsv(chacsv), chalog(chalog), status(status), webhook_url(webhook_url), PLAYERS(read_PLAYERS(player_data["active_players"])) {
-		// auto top10keys = player_data.at("legacy").at("top10");
+		:	chareps(chareps), 
+			chacsv(chacsv), 
+			chalog(chalog), 
+			status(status), 
+			webhook_url(webhook_url), 
+			PLAYERS(read_PLAYERS(player_data["active_players"])),
+			top10list(read_LEGACY(player_data["legacy"]["top10"]))
+	{
+		// top10list = read_LEGACY(player_data["legacy"]["top10"]);
+		// top10list(read_LEGACY(player_data["legacy"]["top10"]));
+		// show_players();
+		// read_LEGACY(player_data["legacy"]["top10"]);
 	}
 	
 	map<string, PlayerHistory> read_PLAYERS(json active_players){
+		
+		
 		map<string, PlayerHistory> players_map;
-		// for (const auto& [key, value] : active_players.items()) {
-            // players_map[key] = PlayerHistory(*this, key, value);
-        // }
 		for (auto it = active_players.items().begin(); it != active_players.items().end(); ++it) {
 			players_map.emplace(it.key(), PlayerHistory(*this, it.key(), it.value()));
 		}
-		
-		
 		return players_map;
 	}
 	
-	void show_players() {
-		for (auto& pair : PLAYERS) {
-			auto& key = pair.first;   // The map key (string)
-			auto& player = pair.second; // The map value (PlayerHistory)
-
-			// Print player details using repr()
-			cout << player.repr() << endl;
+	
+	
+	// vector<PlayerHistory*> read_LEGACY(json legacy_top10){
+	vector<PlayerHistory*> read_LEGACY(json legacy_top10){
+		// vector<PlayerHistory*> top10vector = nullptr;
+		vector<PlayerHistory*> top10vector;
+		for (int i = 0; i < legacy_top10.size(); i++){
+			string player_key = legacy_top10[i];
+			// cout << i+1 << " : " << player_key << endl;
+			// PlayerHistory* player; 
+			// cout << PLAYERS.at(player_key).repr() << "\n";
+			// vectorsito.push_back(&PLAYERS.at(legacy_top10[i]));
+			top10vector.push_back(&PLAYERS.at(player_key));
+			
+			
+		}
+		
+		// for (const auto& key : legacy_top10) {
+			// top10vector.push_back(&PLAYERS[key]);
+			// cout << key;
+		// }
+		return top10vector;
+	}
+	
+	void show_top10() {
+		// for (int i = 0; i < TOP_OF; i++) {
+			// cout << i << " : " << top10list[i].repr() << endl;
+		// }
+		for (size_t i = 0; i < top10list.size(); i++) {
+			cout << i + 1 << " : " << top10list[i]->repr() << endl;
 		}
 	}
 	
+	
+	
+	
+	
+	
+	void show_players() {
+		for (auto& pair : PLAYERS) {
+			auto& key = pair.first;
+			auto& player = pair.second; 
+			cout << key << " : " << player.repr() << endl;
+		}
+		
+		
+		
+		// cout << PLAYERS.at("ECTH").repr();	
+	}
+	
+		// PlayerHistory* = PLAYERS.at("ECTH");
+		// string key = "ECTH";
+		// auto it = PLAYERS.find(key);
+		// if (it != PLAYERS.end()) {
+			// cout << it->second.repr(); // Access the PlayerHistory object
+		// } else {
+			// cout << "Player not found!" << endl;
+		// }
 	
 };
 
@@ -205,6 +260,7 @@ int main() {
 		cerr << "Error: " << e.what() << endl;
 	}
 	sistema->show_players();
+	sistema->show_top10();
 	system("pause");
 	
 

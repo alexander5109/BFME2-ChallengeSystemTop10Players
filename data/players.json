@@ -198,17 +198,6 @@
     }, 
     "legacy": {
 		"date": "2021-03-21",
-		"top10" : {
-			"ECTH": "1",
-			"SAURON": "2",
-			"OTTO": "3",
-			"AHWE": "4",
-			"IMPERIALIST": "5",
-			"LAU": "6",
-			"SCARECROW": "7",
-			"TEMPT": "8",
-			"DARYL": "9",
-			"VITO": "10"
-		}
+		"top10" : ["ECTH", "SAURON", "OTTO", "AHWE", "IMPERIALIST", "LAU", "SCARECROW", "TEMPT", "DARYL","VITO"]
     }
 }
