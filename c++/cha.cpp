@@ -125,6 +125,7 @@ class PlayerInChallenge{
 public:
 	ChallengeEvent& challenge;
 	// PlayerHistory& history;
+	string key;
 	int wins1v1;
 	int wins2v2;
 	int wins;
@@ -134,6 +135,7 @@ public:
 	// Constructor
 	PlayerInChallenge(ChallengeEvent& challenge, string key, string wins1v1, string wins2v2) 
 		: challenge(challenge), 
+		  key(key),
 		  wins1v1(stoi(wins1v1)), 
 		  wins2v2(stoi(wins2v2)) {
 
@@ -143,9 +145,21 @@ public:
 	
 	// ###----------------PlayerInChallenge.Properties-------------###
 	// ###--------------------PlayerInChallenge.Dunder.Methods----------------###
-	// string repr(){
-		// return "|" + history.key + "|";
-	// }
+	
+	string repr(){
+		ostringstream oss;
+		oss << "|"
+			<< key 
+			<< "|wins1v1:" 
+			<< wins1v1 
+			<< "|wins2v2:" 
+			<< wins2v2 
+			<< "|total" 
+			<< wins 
+			<< "|";
+		return oss.str();
+		
+	}
 
 };
 
@@ -188,6 +202,73 @@ public:
 	}
 	
 	
+	
+	// void __build_top10string(){
+		// top10string = "\t\tTOP 10\n";
+		// for (size_t i = chasys.TOP_OF; i > 0; i--){
+			// if (i >= chasys.top10list.size()){
+				// continue;
+			// }
+			// auto& player = chasys.top10list[i];
+			
+			// ostringstream pre_string;
+			// pre_string << "\t" << setw(4) << left << (i + 1) << ". "
+				// << setw(20) << left << player.name
+				// << player.cha_wins << "-" << player.cha_loses << "\n";
+
+			// Append to the top10string
+			// top10string.append(pre_string.str());
+		// }
+	// }
+	
+	
+		
+	string replays_dir() {
+		ostringstream oss;
+
+		// Concatenate the string components
+		// oss << chasys.chareps
+		oss << "\\Challenge"
+			<< key 
+			<< "_"
+			<< winner.key
+			<< "_vs_"
+			<< loser.key
+			<< ",_"
+			<< winner.wins
+			<< "-"
+			<< loser.wins
+			<< ",_"
+			<< version
+			<< ".rar";
+		return oss.str();
+	}
+	string repr(){
+		ostringstream oss;
+		oss << "|" << key << "|" << version << "\tWinner: " << winner.repr() << "\tLoser: " << loser.repr() << "\n";
+		return oss.str();
+		
+	}
+	
+	string str(){
+		ostringstream oss;
+		oss << "------------------------------------\n"
+			<< replays_dir() 
+			<< "\n"
+			<< "```diff\n"
+			<< "\n- Challenge № "
+			<< key
+			<< "\n- Update "
+			<< fecha
+			// << _04_get_my_report()
+			<< "\n\nLet the challenges continue!\n\n"
+			// << top10string
+			<< "```";
+		return oss.str();
+	}
+	
+	//###--------------------ChallengeEvent.Private.Methods-------------###
+
 	
 	// ###--------------------ChallengeEvent.Static.Methods-------------###
 
@@ -287,6 +368,14 @@ public:
 			auto& key = pair.first;
 			auto& player = pair.second; 
 			cout << key << " : " << player.repr() << endl;
+		}
+	}
+	
+	void show_challenges() {
+		for (auto& pair : CHALLENGES) {
+			auto& key = pair.first;
+			auto& challenge = pair.second; 
+			cout << key << " : " << challenge.repr() << endl;
 		}
 	}
 	
@@ -404,8 +493,9 @@ int main() {
 	} catch (const exception& e) {
 		cerr << "Error: " << e.what() << endl;
 	}
-	sistema->show_players();
-	sistema->show_top10();
+	// sistema->show_players();
+	// sistema->show_top10();
+	sistema->show_challenges();
 	system("pause");
 	
 
