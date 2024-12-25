@@ -102,6 +102,118 @@ bool get_boolean(const string& msg, char letra1, char letra2, int indent) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*---------------------------------------------------
+------------------PlayerInChallenge.Class.03-----------
+----------------------------------------------------*/
+
+
+class PlayerInChallenge{
+public:
+	ChallengeEvent& challenge;
+	// PlayerHistory& history;
+	int wins1v1;
+	int wins2v2;
+	int wins;
+		// rank = challenge.chasys._get_index_or_append_if_new(self.history);
+		  // history(challenge.chasys.PLAYERS.at(key)),
+	
+	// Constructor
+	PlayerInChallenge(ChallengeEvent& challenge, string key, string wins1v1, string wins2v2) 
+		: challenge(challenge), 
+		  wins1v1(stoi(wins1v1)), 
+		  wins2v2(stoi(wins2v2)) {
+
+		wins = this->wins1v1 + this->wins2v2;
+	}
+	// ###----------------PlayerInChallenge.Methods-------------###
+	
+	// ###----------------PlayerInChallenge.Properties-------------###
+	// ###--------------------PlayerInChallenge.Dunder.Methods----------------###
+	// string repr(){
+		// return "|" + history.key + "|";
+	// }
+
+};
+
+
+
+
+
+
+
+/*---------------------------------------------------
+------------------ChallengeEvent.Class.02-----------
+----------------------------------------------------*/
+
+class ChallengeEvent{
+public:
+	ChallengeSystem& chasys;
+	int key = key;
+	string version;
+	// date = datetime.strptime(row["date"], '%Y-%m-%d')
+	string fecha;
+	string notes;
+	PlayerInChallenge winner;
+	PlayerInChallenge loser;
+	string top10string;
+		
+	ChallengeEvent(ChallengeSystem& chasys, int key, map<string, string> row)
+		: 	chasys(chasys), 
+			key(key),
+			version(row.at("version")),
+			fecha(row.at("date")),
+			notes(row.at("notes")),
+			winner(PlayerInChallenge(*this, row.at("w_key"), row.at("w_wins1v1"), row.at("w_wins2v2"))),
+			loser(PlayerInChallenge(*this, row.at("l_key"), row.at("l_wins1v1"), row.at("l_wins2v2")))
+		{
+		// _init_01_integrity_check()
+		// _init_02_impact_players_historial()
+		// _init_03_impact_system_top10_rank()
+		// top10string = self.__get_top10string()
+		// __build_top10string();
+	}
+	
+	
+	
+	// ###--------------------ChallengeEvent.Static.Methods-------------###
+
+	// ###--------------------ChallengeEvent.Public.Methods-------------###
+
+	// ###--------------------ChallengeEvent.Protected.Methods-------------###
+
+	//###--------------------ChallengeEvent.Private.Methods-------------###
+
+		
+	//--------------------ChallengeEvent.Properties-------------###
+	
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
 /*---------------------------------------------------
 ------------------PlayerHistory.Class.01-----------
 ----------------------------------------------------*/
@@ -115,11 +227,19 @@ class PlayerHistory {
   
 	// Constructor
 	PlayerHistory(ChallengeSystem& chasys, const string& key, const json& value) 
-		: chasys(chasys), key(key){
-		// names = (vector<string>) value["nicknames"];
-		for (const auto& nickname : value["nicknames"]) {
-			names.push_back(nickname.get<string>());
+		:	chasys(chasys), 
+			key(key),
+			names(read_nicknames(value["nicknames"]))
+				
+		{
+	}
+	
+	vector<string> read_nicknames(const json& names_array){
+		vector<string> nicknames;
+		for (const auto& nickname : names_array) {
+			nicknames.push_back(nickname.get<string>());
 		}
+		return nicknames;
 	}
 	
 	string repr(){
@@ -127,10 +247,6 @@ class PlayerHistory {
 		oss << "|" << key << "|\t|Wins:" << cha_wins << "|Loses:" << cha_loses;
 		return oss.str();
 	}
-
-
-	
-	
 };
 	
 	
@@ -140,7 +256,7 @@ class PlayerHistory {
 ------------------ChallengeSystem.Class.04-----------
 ----------------------------------------------------*/
 class ChallengeSystem {
-  public:
+public:
 	int TOP_OF = 9;
 	string chareps;
 	string chacsv;
@@ -149,7 +265,7 @@ class ChallengeSystem {
 	string webhook_url;
 	map<string, PlayerHistory> PLAYERS;
 	vector<PlayerHistory*> top10list;
-	// vector<string> CHALLENGES;
+	map<int, ChallengeEvent> CHALLENGES;
 	
 	// Constructor
 	ChallengeSystem(const string& chareps, const string& chacsv, const string& chalog, const string& status, const string& webhook_url, const json player_data)
@@ -159,61 +275,12 @@ class ChallengeSystem {
 			status(status), 
 			webhook_url(webhook_url), 
 			PLAYERS(read_PLAYERS(player_data["active_players"])),
-			top10list(read_LEGACY(player_data["legacy"]["top10"]))
+			top10list(read_LEGACY(player_data["legacy"]["top10"])),
+			CHALLENGES(read_CHALLENGES(chacsv))
 	{
-		// top10list = read_LEGACY(player_data["legacy"]["top10"]);
-		// top10list(read_LEGACY(player_data["legacy"]["top10"]));
 		// show_players();
-		// read_LEGACY(player_data["legacy"]["top10"]);
+		// show_top10();
 	}
-	
-	map<string, PlayerHistory> read_PLAYERS(json active_players){
-		
-		
-		map<string, PlayerHistory> players_map;
-		for (auto it = active_players.items().begin(); it != active_players.items().end(); ++it) {
-			players_map.emplace(it.key(), PlayerHistory(*this, it.key(), it.value()));
-		}
-		return players_map;
-	}
-	
-	
-	
-	// vector<PlayerHistory*> read_LEGACY(json legacy_top10){
-	vector<PlayerHistory*> read_LEGACY(json legacy_top10){
-		// vector<PlayerHistory*> top10vector = nullptr;
-		vector<PlayerHistory*> top10vector;
-		for (int i = 0; i < legacy_top10.size(); i++){
-			string player_key = legacy_top10[i];
-			// cout << i+1 << " : " << player_key << endl;
-			// PlayerHistory* player; 
-			// cout << PLAYERS.at(player_key).repr() << "\n";
-			// vectorsito.push_back(&PLAYERS.at(legacy_top10[i]));
-			top10vector.push_back(&PLAYERS.at(player_key));
-			
-			
-		}
-		
-		// for (const auto& key : legacy_top10) {
-			// top10vector.push_back(&PLAYERS[key]);
-			// cout << key;
-		// }
-		return top10vector;
-	}
-	
-	void show_top10() {
-		// for (int i = 0; i < TOP_OF; i++) {
-			// cout << i << " : " << top10list[i].repr() << endl;
-		// }
-		for (size_t i = 0; i < top10list.size(); i++) {
-			cout << i + 1 << " : " << top10list[i]->repr() << endl;
-		}
-	}
-	
-	
-	
-	
-	
 	
 	void show_players() {
 		for (auto& pair : PLAYERS) {
@@ -221,21 +288,99 @@ class ChallengeSystem {
 			auto& player = pair.second; 
 			cout << key << " : " << player.repr() << endl;
 		}
-		
-		
-		
-		// cout << PLAYERS.at("ECTH").repr();	
 	}
 	
-		// PlayerHistory* = PLAYERS.at("ECTH");
-		// string key = "ECTH";
-		// auto it = PLAYERS.find(key);
-		// if (it != PLAYERS.end()) {
-			// cout << it->second.repr(); // Access the PlayerHistory object
-		// } else {
-			// cout << "Player not found!" << endl;
-		// }
+	void show_top10() {
+		for (size_t i = 0; i < top10list.size(); i++) {
+			cout << i + 1 << " : " << top10list[i]->repr() << endl;
+		}
+	}
 	
+private:
+	// ###----------------ChallengeSystem.Private.Methods------------###
+	 map<int, ChallengeEvent> sortedDictOfChallFromLines (const vector<string>& lines) {
+		vector<string> headers;
+		vector<vector<string>> rows;
+
+		// Parse headers
+		istringstream headerStream(lines[0]);
+		string header;
+		while (getline(headerStream, header, ';')) {
+			headers.push_back(header);
+		}
+
+		// Parse rows
+		for (size_t i = 1; i < lines.size(); ++i) {
+			vector<string> row;
+			istringstream rowStream(lines[i]);
+			string cell;
+			while (getline(rowStream, cell, ';')) {
+				row.push_back(cell);
+			}
+			rows.push_back(row);
+		}
+
+		// Sort rows by the "key" column (assume column 0)
+		sort(rows.begin(), rows.end(), [](const vector<string>& a, const vector<string>& b) {
+			return stoi(a[0]) < stoi(b[0]);
+		});
+
+		// Build map of key to ChallengeEvent
+		map<int, ChallengeEvent> dataaaa;
+		for (const auto& row : rows) {
+			map<string, string> rowDict;
+			for (size_t j = 0; j < headers.size(); ++j) {
+				if (j < row.size()) {
+					rowDict[headers[j]] = row[j];
+				}
+			}
+			
+			// Extract the key and version
+			int key = stoi(rowDict.at("key"));
+			// string version = rowDict.at("version");
+
+			// Create the ChallengeEvent and add it to the map
+			dataaaa.emplace(key, ChallengeEvent(*this, key, rowDict));
+		}
+		return dataaaa;
+	};
+	
+	
+	map<int, ChallengeEvent> read_CHALLENGES(string csv_file_path){
+        ifstream file(csv_file_path, ios::in);
+        if (!file.is_open() || file.peek() == ifstream::traits_type::eof()) {
+            throw runtime_error("No existe " + csv_file_path);
+        }
+
+		// Read lines
+		vector<string> lines;
+		string line;
+		while (getline(file, line)) {
+			lines.push_back(line);
+		}
+		
+        return sortedDictOfChallFromLines(lines);
+	}
+	
+	
+	map<string, PlayerHistory> read_PLAYERS(json active_players){
+		map<string, PlayerHistory> players_map;
+		for (auto it = active_players.items().begin(); it != active_players.items().end(); ++it) {
+			players_map.emplace(it.key(), PlayerHistory(*this, it.key(), it.value()));
+		}
+		return players_map;
+	}
+	
+	vector<PlayerHistory*> read_LEGACY(json legacy_top10){
+		vector<PlayerHistory*> top10vector;
+		for (int i = 0; i < legacy_top10.size(); i++){
+			string player_key = legacy_top10[i];
+			top10vector.push_back(&PLAYERS.at(player_key));
+			
+			
+		}
+		return top10vector;
+	}
 };
 
 		
