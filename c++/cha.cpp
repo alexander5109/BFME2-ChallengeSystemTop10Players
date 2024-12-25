@@ -5,6 +5,7 @@
 #include <fstream>
 // #include <nlohmann/json.hpp> // For JSON handling (requires nlohmann/json library)
 #include <json.hpp> // For JSON handling (requires nlohmann/json library)
+#include <cstdlib> // Required for system()
 
 using json = nlohmann::json;
 using namespace std;
@@ -103,6 +104,8 @@ class PlayerHistory {
 	ChallengeSystem& chasys;
 	string key;
 	vector<string> names;
+	int cha_wins = 0;
+	int cha_loses = 0;
   
 	// Constructor
 	PlayerHistory(ChallengeSystem& chasys, const string& key, const json& value) 
@@ -113,6 +116,13 @@ class PlayerHistory {
 		}
 	}
 	
+	string repr(){
+		ostringstream oss;
+		oss << "|" << key << "|\t|Wins:" << cha_wins << "|Loses:" << cha_loses;
+		return oss.str();
+	}
+
+
 	
 	
 };
@@ -154,7 +164,15 @@ class ChallengeSystem {
 		return players_map;
 	}
 	
-	
+	void show_players() {
+		for (auto& pair : PLAYERS) {
+			auto& key = pair.first;   // The map key (string)
+			auto& player = pair.second; // The map value (PlayerHistory)
+
+			// Print player details using repr()
+			cout << player.repr() << endl;
+		}
+	}
 	
 	
 };
@@ -164,9 +182,11 @@ class ChallengeSystem {
 ------------------ok.Iniciar-------------------------
 ----------------------------------------------------*/
 int main() {
+	// ChallengeSystem sistema;
+    ChallengeSystem* sistema = nullptr;
 	try {
 		// Instantiate ChallengeSystem
-		ChallengeSystem SISTEMA(
+		sistema = new ChallengeSystem(
 			"..\\replays",
 			"..\\data\\challenges.csv",
 			"..\\output\\challenges.log",
@@ -174,9 +194,13 @@ int main() {
 			"https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA",
 			json::parse(readFile("..\\data\\players.json"))
 		);
+		
 	} catch (const exception& e) {
 		cerr << "Error: " << e.what() << endl;
 	}
+	sistema->show_players();
+	system("pause");
+	
 
 	return 0;
 }
