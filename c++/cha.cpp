@@ -6,6 +6,10 @@
 // #include <nlohmann/json.hpp> // For JSON handling (requires nlohmann/json library)
 #include <json.hpp> // For JSON handling (requires nlohmann/json library)
 #include <cstdlib> // Required for system()
+#include <sstream>
+#include <stdexcept>
+#include <algorithm>
+#include <functional>
 
 using json = nlohmann::json;
 using namespace std;
@@ -24,6 +28,8 @@ using namespace std;
 
 class ChallengeSystem;
 class PlayerHistory;
+class ChallengeEvent;
+class PlayerInChallenge;
 
 /*---------------------------------------------------
 ---------------------ok. funciones.input-------------
