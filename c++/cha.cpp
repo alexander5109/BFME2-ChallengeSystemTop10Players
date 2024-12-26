@@ -536,7 +536,8 @@ int main() {
 		sistema = new ChallengeSystem(
 			"..\\replays",
 			"..\\data\\challenges.csv",
-			"..\\output\\challenges.log",
+			// "..\\output\\challenges.log",
+			"challenges.log",
 			"..\\output\\status.log",
 			"https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA",
 			json::parse(readFile("..\\data\\players.json"))
@@ -547,7 +548,7 @@ int main() {
 	}
 	// sistema->show_players();
 	// sistema->show_top10();
-	sistema->show_challenges();
+	// sistema->show_challenges();
 	system("pause");
 	
 
