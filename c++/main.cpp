@@ -1,17 +1,19 @@
+#include "myStuff.hpp"
+#include "nlolhmannJson.hpp"
 #include <iostream>
 #include <string>
 #include <map>
 #include <vector>
 #include <fstream>
-// #include <nlohmann/json.hpp> // For JSON handling (requires nlohmann/json library)
-#include <json.hpp> // For JSON handling (requires nlohmann/json library)
 #include <cstdlib> // Required for system()
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
 #include <functional>
 
-using json = nlohmann::json;
+// using json = nlohmann::json;
+using namespace myStuff;
+using namespace nlohmann;
 using namespace std;
 
 // Example usage
@@ -30,92 +32,6 @@ class PlayerHistory;
 class ChallengeEvent;
 class PlayerInChallenge;
 class ChallengeSystem;
-
-/*---------------------------------------------------
----------------------ok. funciones.input-------------
-----------------------------------------------------*/
-
-
-// Utility function to read a file into a string
-string readFile(const string& filePath) {
-    ifstream file(filePath);
-    if (!file.is_open()) {
-        throw runtime_error("Could not open file: " + filePath);
-    }
-    return string((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
-}
-
-
-template <typename K, typename V>
-void print_map_and_wait(const std::map<K, V>& m) {
-    for (const auto& pair : m) {
-        std::cout << pair.first << ": " << pair.second << std::endl;
-    }
-	
-    std::cout << "Press something to continue...";
-    std::cin.get();  // Waits for user input (any key press
-}
-
-
-
-
-int get_int(const string& msg, int indent, bool show_error, int min, int max) {
-	string ingreso;
-	int num;
-	string indent_str(indent, '\t');
-	string error_indent_str(indent + 1, '\t');
-
-	while (true) {
-		cout << indent_str << msg;
-		getline(cin, ingreso);
-
-		try {
-			num = stoi(ingreso);
-			if (num >= min && num <= max) {
-				return num;
-			} else {
-				cout << error_indent_str << "Error de ingreso: '" << ingreso 
-						  << "' esta fuera del rango " << min << "-" << max << ".\n";
-			}
-		} catch (const invalid_argument&) {
-			if (show_error) {
-				cout << error_indent_str << "Error de ingreso: '" << ingreso 
-						  << "' no es un numero.\n";
-			}
-		} catch (const out_of_range&) {
-			if (show_error) {
-				cout << error_indent_str << "Error de ingreso: '" << ingreso 
-						  << "' esta fuera del rango permitido para enteros.\n";
-			}
-		}
-	}
-}
-
-bool get_boolean(const string& msg, char letra1, char letra2, int indent) {
-	string ingreso;
-	string indent_str(indent, '\t');
-
-	while (true) {
-		cout << indent_str << msg << " Ingrese " << letra1 << "/" << letra2 << ": ";
-		getline(cin, ingreso);
-
-		if (ingreso.length() == 1) {
-			char respuesta = toupper(ingreso[0]);
-			if (respuesta == letra1) {
-				return true;
-			} else if (respuesta == letra2) {
-				return false;
-			}
-		}
-
-		// Handle invalid input
-		cout << indent_str << "Entrada invalida. Por favor ingrese " << letra1 << " o " << letra2 << ".\n";
-	}
-}
-
-
-
-
 
 
 
@@ -136,7 +52,7 @@ bool get_boolean(const string& msg, char letra1, char letra2, int indent) {
 
 
 class PlayerInChallenge{
-public:
+  public:
 	ChallengeEvent& challenge;
 	// PlayerHistory& history;
 	string key;
@@ -148,11 +64,10 @@ public:
 	
 	// Constructor
 	PlayerInChallenge(ChallengeEvent& challenge, string key, string wins1v1, string wins2v2) 
-		: challenge(challenge), 
-		  key(key),
-		  wins1v1(stoi(wins1v1)), 
-		  wins2v2(stoi(wins2v2)) {
-
+	: 	challenge(challenge), 
+		key(key),
+		wins1v1(stoi(wins1v1)), 
+		wins2v2(stoi(wins2v2)) {
 		wins = this->wins1v1 + this->wins2v2;
 	}
 	// ###----------------PlayerInChallenge.Methods-------------###
@@ -188,7 +103,7 @@ public:
 ----------------------------------------------------*/
 
 class ChallengeEvent{
-public:
+  public:
 	ChallengeSystem& chasys;
 	int key = key;
 	string version;
@@ -279,7 +194,7 @@ public:
 			<< notes
 			// << _04_get_my_report()
 			<< "\n\nLet the challenges continue!\n\n"
-			// << top10string
+			<< top10string
 			<< "```";
 		return oss.str();
 	}
@@ -332,18 +247,19 @@ class PlayerHistory {
 		{
 	}
 	
+	string repr(){
+		ostringstream oss;
+		oss << "|" << key << "|\t|Wins:" << cha_wins << "|Loses:" << cha_loses;
+		return oss.str();
+	}
+	
+  private:
 	vector<string> read_nicknames(const json& names_array){
 		vector<string> nicknames;
 		for (const auto& nickname : names_array) {
 			nicknames.push_back(nickname.get<string>());
 		}
 		return nicknames;
-	}
-	
-	string repr(){
-		ostringstream oss;
-		oss << "|" << key << "|\t|Wins:" << cha_wins << "|Loses:" << cha_loses;
-		return oss.str();
 	}
 };
 	
@@ -354,7 +270,7 @@ class PlayerHistory {
 ------------------ChallengeSystem.Class.04-----------
 ----------------------------------------------------*/
 class ChallengeSystem {
-public:
+  public:
 	int TOP_OF = 9;
 	string chareps;
 	string chacsv;
@@ -428,7 +344,7 @@ public:
 		}
 	}
 	
-private:
+  private:
 	// ###----------------ChallengeSystem.Private.Methods------------###
 	 map<int, ChallengeEvent> sortedDictOfChallFromLines (const vector<string>& lines) {
 		vector<string> headers;

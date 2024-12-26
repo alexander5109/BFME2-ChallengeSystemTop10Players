@@ -1,9 +1,8 @@
 @echo off
 
 :: Set paths
-set SOURCE_FILE=cha.cpp
+set SOURCE_FILE=main.cpp 
 set OUTPUT_FILE=challenge_system.exe
-set INCLUDE_PATH=nlohmann
 
 :: Check if g++ is available
 where g++ >nul 2>&1
@@ -14,7 +13,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Compile the program
-g++ %SOURCE_FILE% -o %OUTPUT_FILE% -I%INCLUDE_PATH%
+g++ %SOURCE_FILE% -o %OUTPUT_FILE%
 
 :: Check if compilation was successful
 if %ERRORLEVEL% neq 0 (
