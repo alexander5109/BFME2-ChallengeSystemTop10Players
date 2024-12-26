@@ -61,8 +61,7 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 #"""-------------------------------------------PlayerHistory.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class PlayerHistory:
-	def __init__(self, chasys, key, value):
-		self.chasys = chasys
+	def __init__(chasys, key, value):
 		self.key = key
 		self.names = value["nicknames"]
 		# self.discord_id = value["discord_id"]
@@ -96,11 +95,11 @@ class PlayerHistory:
 		else:
 			self.cha_loses += 1
 	
-	def get_status(self):
-		return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
+	def get_status(self, chasys):
+		return f"|{self.key}|\tRank:{self.get_rank(chasys)}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 		
-	def get_rank(self):
-		return self.chasys.top10list.index(self)
+	def get_rank(self, chasys):
+		return chasys.top10list.index(self)
 		
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
@@ -172,8 +171,7 @@ class PlayerHistory:
 #------------------------------------------------------------------------------------------#
 # Define an interface
 class ChallengeEvent():
-	def __init__(self, chasys, key, row):
-		self.chasys = chasys
+	def __init__(self, key, row):
 		self.key = key
 		self.row = row
 		self.version = row["version"]
@@ -182,21 +180,23 @@ class ChallengeEvent():
 		self.winner = PlayerInChallenge(self, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
 		self.loser = PlayerInChallenge(self, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
 		self._init_01_integrity_check()
+		
 		self._init_02_impact_players_historial()
-		self._init_03_impact_system_top10_rank()
-		self.top10string = self.__get_top10string()
+		self._init_03_impact_system_top10_rank(chasys)
+		
+		self._init_04_top10string()
 	
 	
 	
 	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
-	def new_from_row(cls, chasys, key, version, row_dict):
+	def new_from_row(cls, key, version, row_dict):
 		if version == "NO_SCORE_MODE":
-			return NoScoreChallenge(chasys, key, row_dict)
+			return NoScoreChallenge(key, row_dict)
 		elif version == "KICK_ADD_MODE":
-			return KickAddChallenge(chasys, key, row_dict)
+			return KickAddChallenge(key, row_dict)
 		else:
-			return NormalChallenge(chasys, key, row_dict)
+			return NormalChallenge(key, row_dict)
 					
 	
 	
@@ -220,10 +220,10 @@ class ChallengeEvent():
 
 			
 	###--------------------ChallengeEvent.Protected.Methods-------------###
-	def _init_03_impact_system_top10_rank(self):
+	def _init_03_impact_system_top10_rank(self, chasys):
 		"ChallengeEvent - winner_takes_over"
 		if self.challenger is self.winner:
-			self.chasys._apply_a_take_over(self)
+			chasys._apply_a_take_over(self)
 			
 	def _05_str_who_challenged_who(self):
 		"ChallengeEvent - Comportamiento normal"
@@ -247,15 +247,14 @@ class ChallengeEvent():
 		}
 		
 	###--------------------ChallengeEvent.Private.Methods-------------###
-	def __get_top10string(self):
-		top10string = "\t\tTOP 10\n"
-		# ic(self.chasys.top10list)
-		for i in range(self.chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
-			if i >= len(self.chasys.top10list):
+	def _init_04_top10string(self, chasys):
+		self.top10string = "\t\tTOP 10\n"
+		# ic(chasys.top10list)
+		for i in range(chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
+			if i >= len(chasys.top10list):
 				continue
-			player = self.chasys.top10list[i]
-			top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-		return top10string
+			player = chasys.top10list[i]
+			self.top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		
 		
 	###--------------------ChallengeEvent.Properties-------------###
@@ -384,10 +383,10 @@ class NormalChallenge(ChallengeEvent):
 		self.winner.history.append_cha_win_lose(self.winner)
 		self.loser.history.append_cha_win_lose(self.loser)
 		
-	def _init_03_impact_system_top10_rank(self):
+	def _init_03_impact_system_top10_rank(self, chasys):
 		"NormalChallenge - winner_takes_over"
 		if self.challenger is self.winner:
-			self.chasys._apply_a_take_over(self)
+			chasys._apply_a_take_over(self)
 
 	def _04_get_my_report(self):
 		def __report_01_report_defenseortakeover():
@@ -582,9 +581,9 @@ class KickAddChallenge(ChallengeEvent):
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		
-	def _init_03_impact_system_top10_rank(self):
+	def _init_03_impact_system_top10_rank(self, chasys):
 		"KickAddChallenge - unique method"
-		self.chasys._apply_a_kick_add(self)
+		chasys._apply_a_kick_add(self)
 		
 	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
@@ -627,8 +626,8 @@ class KickAddChallenge(ChallengeEvent):
 #-------------------------------------------------------------------------------------------------------------#
 
 class PlayerInChallenge:
-	def __init__(self, challenge, key, wins1v1, wins2v2):
-		self.challenge = challenge
+	def __init__(self, key, wins1v1, wins2v2):
+		# self.challenge = challenge
 		self.history = self.challenge.chasys.PLAYERS[key]
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
@@ -687,8 +686,20 @@ class ChallengeSystem:
 		self.top10list = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
 		self.CHALLENGES = self.__read_CHALLENGES()
 		
+		"""procedures"""
+		self.post_operations()
+		
+		
 		
 	###----------------ChallengeSystem.Protected.Methods------------###
+			
+	def post_operations(self):
+		pass
+		# for cha in self.CHALLENGES:
+			# self.set_top10_string(cha)
+	
+		
+	
 	def _get_index_or_append_if_new(self, player):
 		try:
 			return self.top10list.index(player)
@@ -710,7 +721,7 @@ class ChallengeSystem:
 		if not isinstance(challenge, (NormalChallenge, NoScoreChallenge)):
 			raise Exception(f"Wtf class? {type(challenge)}")
 		self.top10list.remove(challenge.winner.history) 
-		self.top10list.insert(challenge.loser.history.get_rank(), challenge.winner.history) 
+		self.top10list.insert(challenge.loser.history.get_rank(self), challenge.winner.history) 
 		
 	###----------------ChallengeSystem.Public.Methods------------###
 	def write_csv(self):
@@ -726,7 +737,7 @@ class ChallengeSystem:
 		print(".csv guardado.")
 
 	def write_status(self):
-		super_string = "\n".join(str(player.get_status()) for player in sorted( self.PLAYERS.values() ))
+		super_string = "\n".join(str(player.get_status(self)) for player in sorted( self.PLAYERS.values() ))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
@@ -827,7 +838,7 @@ class ChallengeSystem:
 				row_dict = {headers[i]: row[i] for i in range(len(headers))}
 				key = int(row_dict['key'])
 				version = row_dict['version']
-				dataaaa[key] = ChallengeEvent.new_from_row(self, key, version, row_dict)
+				dataaaa[key] = ChallengeEvent.new_from_row(key, version, row_dict)
 			return dataaaa
 			
 		if not self.chacsv.exists() or self.chacsv.stat().st_size == 0:
@@ -840,7 +851,7 @@ class ChallengeSystem:
 		
 	def __read_PLAYERS(self, active_players):
 		if self.chalog.exists():
-			return { key: PlayerHistory(self, key, value) for key, value in active_players.items() }
+			return { key: PlayerHistory(key, value) for key, value in active_players.items() }
 		else:
 			raise Exception(f"No existe {self.chalog}")
 		
