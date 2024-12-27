@@ -17,16 +17,29 @@ import time
 	
 	
 	
-	
 # //--------------------------------------------------------------------//
 # ;;---------------------ok. funciones.input--------------------------;;
 # //--------------------------------------------------------------------//
 
-		
-		
-		
-		
-		
+def get_previous_challenge_to(player_history):
+	if len(player_history.challenges) > 0:
+		return player_history.challenges[-1]
+	return None
+
+def get_days_between_challenges(cha1, cha2):
+	return (cha1.date - cha2.date).days
+
+def get_rank_or_append_last(player_history, TOP10_LIST):
+	if player_history not in TOP10_LIST:
+		TOP10_LIST.append(player_history)
+	return TOP10_LIST.index(player_history)
+
+
+
+
+
+
+
 
 def get_int(msg, indent=0, show_error=True, min=None, max=None):
 	while True:
@@ -61,7 +74,7 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 #"""-------------------------------------------PlayerHistory.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class PlayerHistory:
-	def __init__(chasys, key, value):
+	def __init__(self, key, value):
 		self.key = key
 		self.names = value["nicknames"]
 		# self.discord_id = value["discord_id"]
@@ -90,16 +103,18 @@ class PlayerHistory:
 		self.wins_total += player_in_chall.wins
 		self.wins1v1_total += player_in_chall.wins1v1
 		self.wins2v2_total += player_in_chall.wins2v2
-		if player_in_chall is player_in_chall.challenge.winner:
+		if player_in_chall.won:
 			self.cha_wins += 1
 		else:
 			self.cha_loses += 1
+		
+		
 	
 	def get_status(self, chasys):
 		return f"|{self.key}|\tRank:{self.get_rank(chasys)}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 		
 	def get_rank(self, chasys):
-		return chasys.top10list.index(self)
+		return chasys.TOP10_LIST.index(self)
 		
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
@@ -177,15 +192,9 @@ class ChallengeEvent():
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.notes = row['notes']
-		self.winner = PlayerInChallenge(self, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
-		self.loser = PlayerInChallenge(self, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
+		self.winner = PlayerInChallenge(row["w_key"], row["w_wins1v1"], row["w_wins2v2"], won=True)
+		self.loser = PlayerInChallenge(row["l_key"], row["l_wins1v1"], row["l_wins2v2"], won=False)
 		self._init_01_integrity_check()
-		
-		self._init_02_impact_players_historial()
-		self._init_03_impact_system_top10_rank(chasys)
-		
-		self._init_04_top10string()
-	
 	
 	
 	###--------------------ChallengeEvent.Static.Methods-------------###
@@ -202,6 +211,8 @@ class ChallengeEvent():
 	
 	
 	###--------------------ChallengeEvent.Public.Methods-------------###
+	
+	
 	def as_row(self):
 		columns = map(lambda x: str(x), [self.key, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
 		return ";".join(columns)+"\n"
@@ -249,11 +260,11 @@ class ChallengeEvent():
 	###--------------------ChallengeEvent.Private.Methods-------------###
 	def _init_04_top10string(self, chasys):
 		self.top10string = "\t\tTOP 10\n"
-		# ic(chasys.top10list)
+		# ic(chasys.TOP10_LIST)
 		for i in range(chasys.TOP_OF, -1, -1):	#iterar del 9 al 0
-			if i >= len(chasys.top10list):
+			if i >= len(chasys.TOP10_LIST):
 				continue
-			player = chasys.top10list[i]
+			player = chasys.TOP10_LIST[i]
 			self.top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
 		
 		
@@ -366,7 +377,7 @@ class NormalChallenge(ChallengeEvent):
 		
 	@cached_property
 	def replays_dir(self):
-		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
+		return Path("replays") / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------NormalChallenge.Protected.Methods-------------###
 	def _init_01_integrity_check(self):
@@ -376,10 +387,14 @@ class NormalChallenge(ChallengeEvent):
 		if self.winner.wins <= self.loser.wins:
 			raise Exception(f"Error de integridad: Como es posible que el ganador no tenga mas victorias que el perdedor?")
 			
-	def _init_02_impact_players_historial(self):
-		"NormalChallenge is the only one that impacts historial"
+	def _init_01_set_history_and_append_cha(self, players_dict, top10_list):
+		self.winner.do_01_set_history_and_rank(self, players_dict, top10_list)
+		self.loser.do_01_set_history_and_rank(self, players_dict, top10_list)
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
+		
+	def _init_02_impact_score_history_if_correspond(self):
+		"NormalChallenge is the only one that impacts historial"
 		self.winner.history.append_cha_win_lose(self.winner)
 		self.loser.history.append_cha_win_lose(self.loser)
 		
@@ -445,13 +460,13 @@ class NormalChallenge(ChallengeEvent):
 			json=edit_payload
 		)
 	
-	def _07_rename_existing_replaypack(self, torename, compress):
-		existing = self.chasys.chareps / torename
+	def _07_rename_existing_replaypack(self, chareps_dir, torename, compress):
+		existing = chareps_dir / torename
 		if existing.exists() and not self.replays_dir.exists():
 			existing.rename(self.replays_dir.name)
 			print(f"* {torename} was renamed to {self.replays_dir.name}")
 		# if compress:
-			# ChallengeSystem.compress_folder(ideal)
+			# SystemOfChallenges.compress_folder(self.replays_dir)
 	
 	
 	
@@ -500,10 +515,14 @@ class NoScoreChallenge(ChallengeEvent):
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 			
-	def _init_02_impact_players_historial(self):
-		"NoScoreChallenge is designed to not affect player winrate"
+	def _init_01_set_history_and_append_cha(self, players_dict, top10_list):
+		self.winner.do_01_set_history_and_rank(self, players_dict, top10_list)
+		self.loser.do_01_set_history_and_rank(self, players_dict, top10_list)
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
+		
+	def _init_02_impact_score_history_if_correspond(self):
+		"NoScoreChallenge is designed to not affect player winrate"
 		
 	def _04_get_my_report(self):
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
@@ -572,14 +591,21 @@ class KickAddChallenge(ChallengeEvent):
 		
 	###----------------KickAddChallenge.Protected.Methods-------------###
 	def _init_01_integrity_check(self):
-		"NoScoreChallenge - don't log me with games"
+		"KickAddChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
-	def _init_02_impact_players_historial(self):
-		"KickAddChallenge is designed to not affect player winrate"
+	def _init_01_set_history_and_append_cha(self, players_dict, top10_list):
+		self.winner.do_01_set_history_and_rank(self, players_dict, top10_list)
+		self.loser.do_01_set_history_and_rank(self, players_dict, top10_list)
+		"KickAddChallenge - averiguar last played_date before appending"
+		self.winner.do_02_set_previous_challenge(self)
+		self.loser.do_02_set_previous_challenge(self)
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
+		
+	def _init_02_impact_score_history_if_correspond(self):
+		"KickAddChallenge is designed to not affect player winrate"
 		
 	def _init_03_impact_system_top10_rank(self, chasys):
 		"KickAddChallenge - unique method"
@@ -626,28 +652,44 @@ class KickAddChallenge(ChallengeEvent):
 #-------------------------------------------------------------------------------------------------------------#
 
 class PlayerInChallenge:
-	def __init__(self, key, wins1v1, wins2v2):
-		# self.challenge = challenge
-		self.history = self.challenge.chasys.PLAYERS[key]
+	def __init__(self, key, wins1v1, wins2v2, won):
+		self.key = key
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
-		self.rank = self.challenge.chasys._get_index_or_append_if_new(self.history)
+		self.won = won
+		# self.history = None
+		self.rank = None
+		self.previous_challenge = None	#Not everyone should compute me
+		self.days_since_last_chall = None	#Not everyone should compute me
+		
+		
+	###----------------PlayerInChallenge.Public.Methods-------------###
+	def do_01_set_history_and_rank(self, challenge, players, top10_list):
+		self.history = players[self.key]
+		self.rank = get_rank_or_append_last(self.history, top10_list)
+		
+	def do_02_set_previous_challenge(self, challenge):
+		self.previous_challenge = get_previous_challenge_to(self.history)
+		if self.previous_challenge:
+			self.days_since_last_chall = get_days_between_challenges(challenge, self.previous_challenge)
+		
+		
 	###----------------PlayerInChallenge.Properties-------------###
 	@cached_property
 	def wins(self):
 		return self.wins1v1 + self.wins2v2
 		
-	@cached_property
-	def previous_challenge(self):
-		return self.history.challenges[self.history.challenges.index(self.challenge)-1]
+	# @cached_property
+	# def previous_challenge(self):
+		# return self.history.challenges[self.history.challenges.index(self.challenge)-1]
 		
-	@cached_property
-	def days_since_last_chall(self):
-		return (self.challenge.date - self.previous_challenge.date).days
+	# @cached_property
+	# def days_since_last_chall(self, challenge):
+		# return (challenge.date - self.previous_challenge.date).days
 	
-	@cached_property
-	def history(self):
-		return 
+	# @cached_property
+	# def history(self):
+		# return 
 		
 	@cached_property
 	def rank_ordinal(self):
@@ -666,15 +708,15 @@ class PlayerInChallenge:
 
 	###--------------------PlayerInChallenge.Dunder.Methods----------------###
 	def __repr__(self):
-		return f"|{self.history.key}|"
+		return f"|{self.key}|"
 
 
 
 
 #-------------------------------------------------------------------------------------------------------------#
-#"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
+#"""---------------------------------------SystemOfChallenges.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
-class ChallengeSystem:
+class SystemOfChallenges:
 	TOP_OF = 9 # 14 # 20
 	def __init__(self, chareps, chacsv, chalog, status, player_data, webhook_url):
 		self.chareps = chareps
@@ -683,47 +725,50 @@ class ChallengeSystem:
 		self.status = status
 		self.webhook_url = webhook_url
 		self.PLAYERS = self.__read_PLAYERS(player_data["active_players"])
-		self.top10list = [self.PLAYERS[key] for key in player_data["legacy"]["top10"].keys()]
+		self.TOP10_LIST = list(map(lambda x: self.PLAYERS[x], player_data["legacy"]["top10"]))
 		self.CHALLENGES = self.__read_CHALLENGES()
 		
 		"""procedures"""
-		self.post_operations()
+		self.perform_an_orchestra_of_mutations()
 		
 		
 		
-	###----------------ChallengeSystem.Protected.Methods------------###
+	###----------------SystemOfChallenges.Protected.Methods------------###
 			
-	def post_operations(self):
-		pass
-		# for cha in self.CHALLENGES:
-			# self.set_top10_string(cha)
+	def previous_challenge_of(self, player_id):
+		curr = self.history.challenges.index(self.challenge)
+		return self.history.challenges[curr-1]
+			
+			
+			
+	def perform_an_orchestra_of_mutations(self):
+		# pass
+		for cha in self.CHALLENGES.values():
+			cha._init_01_set_history_and_append_cha(self.PLAYERS, self.TOP10_LIST)
+			cha._init_02_impact_score_history_if_correspond()
+			cha._init_03_impact_system_top10_rank(self)
+			cha._init_04_top10string(self)
 	
 		
 	
-	def _get_index_or_append_if_new(self, player):
-		try:
-			return self.top10list.index(player)
-		except ValueError:
-			self.top10list.append(player)
-			return self.top10list.index(player)
 	
 	
 	def _apply_a_kick_add(self, challenge):
 		if not isinstance(challenge, KickAddChallenge):
 			raise Exception(f"Wtf class? {type(challenge)}")
-		self.top10list.remove(challenge.loser.history)
-		self.top10list.remove(challenge.winner.history)
-		self.top10list.insert(self.TOP_OF, challenge.loser.history)
-		self.top10list.insert(self.TOP_OF, challenge.winner.history)
+		self.TOP10_LIST.remove(challenge.loser.history)
+		self.TOP10_LIST.remove(challenge.winner.history)
+		self.TOP10_LIST.insert(self.TOP_OF, challenge.loser.history)
+		self.TOP10_LIST.insert(self.TOP_OF, challenge.winner.history)
 			
 			
 	def _apply_a_take_over(self, challenge):
 		if not isinstance(challenge, (NormalChallenge, NoScoreChallenge)):
 			raise Exception(f"Wtf class? {type(challenge)}")
-		self.top10list.remove(challenge.winner.history) 
-		self.top10list.insert(challenge.loser.history.get_rank(self), challenge.winner.history) 
+		self.TOP10_LIST.remove(challenge.winner.history) 
+		self.TOP10_LIST.insert(challenge.loser.history.get_rank(self), challenge.winner.history) 
 		
-	###----------------ChallengeSystem.Public.Methods------------###
+	###----------------SystemOfChallenges.Public.Methods------------###
 	def write_csv(self):
 		# if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
 			# return
@@ -750,10 +795,11 @@ class ChallengeSystem:
 			
 			
 	def write_chalog(self):
-		super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
+		# super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
+		super_string = f"##AutoGenerated by 'ChallengeSystem'\nRegards, Bambi\n\n"
 		for num, cha in enumerate( sorted( self.CHALLENGES.values(),reverse=True ) , start=1):
 			if num == 1:
-				cha._07_rename_existing_replaypack("torename.rar", compress=False)
+				cha._07_rename_existing_replaypack(self.chareps, "torename.rar", compress=False)
 				print(cha)
 			super_string += str(cha)
 		
@@ -826,7 +872,7 @@ class ChallengeSystem:
 		# ic(self.PLAYERS[pname].loses2v2_total)
 
 	
-	###----------------ChallengeSystem.Private.Methods------------###
+	###----------------SystemOfChallenges.Private.Methods------------###
 	def __read_CHALLENGES(self):
 		def sorted_dict_of_chall_from_lines(lines):
 			headers = lines[0].strip().split(';')
@@ -856,7 +902,7 @@ class ChallengeSystem:
 			raise Exception(f"No existe {self.chalog}")
 		
 		
-	###----------------ChallengeSystem.Static.Methods------------###
+	###----------------SystemOfChallenges.Static.Methods------------###
 	# @staticmethod
 	# def compress_folder(folder_path):
 		# if folder_path.exists():
@@ -877,7 +923,7 @@ class ChallengeSystem:
 #"""---------------------------------------------ok.Iniciar-------------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 
-SISTEMA = ChallengeSystem(
+SISTEMA = SystemOfChallenges(
 	player_data = json.load(open(r"data\players.json")),
 	chareps = Path.cwd() / r"replays",
 	chacsv = Path.cwd() / r"data\challenges.csv",
