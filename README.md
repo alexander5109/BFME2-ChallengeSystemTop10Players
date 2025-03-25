@@ -10,3 +10,9 @@ NO_SCORE_MODE: used when one player challenges another but he's dodged, or he's 
 
 
 once .csv is updated, run cha.py to autoupdate the data/cha.log, which has the story of challenges. in the top of the file there will be the latest.
+
+
+### Commands:
+python cha.py -> updates the output/challenges.log and output/status.log
+python cha.py 334 post -> post that chlng with its respective replays in chaupdates discord
+python cha.py 334 post_all -> post that chlng, and each 8 minds, sends the subsequent ones.

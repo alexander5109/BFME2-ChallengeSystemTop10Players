@@ -42,10 +42,6 @@ logging.basicConfig(level=logging.INFO)
 ##-------------------------------------------------------------------##
 ##------------------------class.Enums.class--------------------------##
 ##-------------------------------------------------------------------##
-class WebhooksURL(Enum):
-	THEPIG = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
-	
-	
 class DiscordID(Enum):
     TEMPT = "573249577801482270"
     ECTH = "280848366030815233"
@@ -332,7 +328,8 @@ async def muka(channel):
 
 
 def fire_challenge_webhook(webhook, challenge):
-	webhook = discord.SyncWebhook.from_url(WebhooksURL.THEPIG.value)
+	ic(mytoken.PIG_WEB_HOOK)
+	webhook = discord.SyncWebhook.from_url(mytoken.PIG_WEB_HOOK)
 	embed = discord.Embed.from_dict(challenge.embed)
 	if challenge.replays:
 		file = discord.File(challenge.replays)
@@ -350,7 +347,7 @@ async def chalog(ctx, cha_id):
 		if cha_id.isnumeric():
 			challenge = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
 			if challenge:
-				fire_challenge_webhook(WebhooksURL.THEPIG.value, challenge)
+				fire_challenge_webhook(mytoken.PIG_WEB_HOOK, challenge)
 				await ctx.send(f"Challenge Nº {cha_id} registered {'with' if challenge.replays else 'without'} replay.")
 			else:
 				await ctx.send(f"Challenge Nº {cha_id} not found.")

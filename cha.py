@@ -6,6 +6,7 @@ from functools import cached_property
 import requests
 import sys
 import time
+import mytoken
 
 
 # import csv
@@ -873,7 +874,7 @@ SISTEMA = ChallengeSystem(
 	chacsv = Path.cwd() / r"data\challenges.csv",
 	chalog = Path.cwd() / r"output\challenges.log",
 	status = Path.cwd() / r"output\status.log",
-	webhook_url = "https://discord.com/api/webhooks/840359006945935400/4Ss0lC1i2NVNyZlBlxfPhDcdjXCn2HqH-b2oxMqGmysqeIdjL7afF501gLelNXAe0TOA"
+	webhook_url = mytoken.PIG_WEB_HOOK
 )
 
 
