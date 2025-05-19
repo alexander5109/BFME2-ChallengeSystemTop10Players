@@ -106,6 +106,7 @@ class PlayerHistory:
 	def get_1v1_vs(self, other, print_em=True):
 		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
 		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
+		ic(self_wins)
 		self_wins_len = len(self_wins)
 		other_wins_len = len(other_wins)
 		total_matches_len = self_wins_len + other_wins_len
@@ -806,8 +807,8 @@ class ChallengeSystem:
 		else:
 			raise Exception(f"Challenge of id {hint} not found. Logged challenges are between {min} and {max}.")
 
-	# def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
-		# return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
+	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
+		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
 		
 	# def consult_04_who_is_black(self, pname):
 		# ic(self.PLAYERS[pname].is_black)
@@ -890,7 +891,21 @@ if __name__ == "__main__":
 	
 		
 	"""1. Consultas functions"""
-	# SISTEMA.consult_03_player_vs_player()
+	# SISTEMA.consult_03_player_vs_player("ECTH", "ANDY", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("ECTH", "ASTRO", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("ECTH", "AHWE", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("ECTH", "YUSUF", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("ECTH", "ENUMA", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("ECTH", "GANNICUS", print_em=True)
+	
+	
+	
+	# SISTEMA.consult_03_player_vs_player("OTTO", "ANDY", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("OTTO", "AHWE", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("OTTO", "ECTH", print_em=True)
+	
+	
+	SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
 	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
