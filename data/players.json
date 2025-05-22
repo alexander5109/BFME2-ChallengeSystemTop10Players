@@ -11,6 +11,10 @@
         }
     },
     "active_players": {
+        "NOOB4LIFE": {
+            "nicknames": ["Noob4life"],
+            "discord_ids": ["#mclk6104"]
+        },
         "LEV": {
             "nicknames": ["Lev"],
             "discord_ids": ["#lev1913"]
