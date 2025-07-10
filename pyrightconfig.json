@@ -1,0 +1,19 @@
+{
+  "typeCheckingMode": "default",
+
+  "reportMissingTypeArgument": "warning",
+  "reportMissingParameterType": "information",
+  "reportMissingReturnType": "information",
+  "reportMissingTypeStubs": "none",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownParameterType": "warning",
+  "reportUnknownArgumentType": "information",
+
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalSubscript": "error",
+  "reportGeneralTypeIssues": "error",
+  "reportUnboundVariable": "error",
+
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning"
+}
