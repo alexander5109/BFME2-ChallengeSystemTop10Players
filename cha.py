@@ -26,12 +26,22 @@ import mytoken
 		
 		
 		
-		
+def wait_minutes(minutes:int ):
+	towait = minutes*60
+	print(f"Waiting {towait} minutes...")
+	time.sleep(towait)
 		
 
 def get_int(msg, indent=0, show_error=True, min=None, max=None):
 	while True:
-		ingreso = input(f"{'\t'*indent}{msg}")
+		if min and max:
+			ingreso = input(f"{'\t'*indent}{msg} (Min:{min},Max:{max}): ")
+		elif min:
+			ingreso = input(f"{'\t'*indent}{msg} (Min:{min}): ")
+		elif max:
+			ingreso = input(f"{'\t'*indent}{msg} (Max:{max}): ")
+		else:
+			ingreso = input(f"{'\t'*indent}{msg}")
 		try: 
 			num = int(ingreso)
 			if (min is None or num >= min) and (max is None or num <= max):
@@ -208,9 +218,12 @@ class ChallengeEvent():
 		columns = map(lambda x: str(x), [self.key, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
 		return ";".join(columns)+"\n"
 		
-	def post(self, confirmed=False):
+	def post(self: "ChallengeEvent", confirmed: bool, delay: int):
 		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
 			return
+		self.preguntar_por_replaypack()
+		if delay:
+			wait_minutes(delay)
 		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
 		response = self._06_get_my_post(discord_message)
 		
@@ -423,11 +436,15 @@ class NormalChallenge(ChallengeEvent):
 			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
 		return string
 	
-
-	def _06_get_my_post(self, discord_message):
+	def preguntar_por_replaypack(self: "NormalChallenge"):
+		if self.replays_dir is None:
+			return
 		while not self.replays_dir.exists():
 			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
 				sys.exit("Ok bye")
+		
+
+	def _06_get_my_post(self, discord_message):
 		response = requests.post(
 			self.chasys.webhook_url,
 			data={"content": discord_message},
@@ -753,32 +770,30 @@ class ChallengeSystem:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
 	
-	def send_all_posts(self, start_with):
-		if not start_with:
-			start_with = self.get_challenge().key
-		end_with = len(SISTEMA.CHALLENGES)
-		if not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{end_with} each 7 minutes"):
+	def send_all_posts(self, confirmed:bool, start_with:int, finish_at: int, initial_delay: int, delay_between: int):
+		if not confirmed and not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{finish_at} in {initial_delay} minutes each {delay_between} minutes"):
 			return
-		for chakey in range(start_with, end_with+1):
-			self.CHALLENGES[chakey].post(confirmed=True)
-			time.sleep(60*7)
+		self.CHALLENGES[start_with].post(confirmed=True, delay=initial_delay)
+		for chakey in range(start_with+1, end_with+1):
+			self.CHALLENGES[chakey].post(confirmed=True, delay=delay_between)
 			
 	def execute_argv_operations_if_any(self, argv):
+		min_chall = min(self.CHALLENGES)
+		max_chall = max(self.CHALLENGES)
 		def __get_validated_argv_dict(argv):
 			argv_dict = {
 				"cha_id": None,
 				"post": None,
-				"post_all": None
+				"post_all": None,
+				"confirmed": False,
 			}
 			if len(argv) > 2:
 				if argv[1].isnumeric():
 					cha_id = int(argv[1])
-					min = 1
-					max = len(self.CHALLENGES)
-					if min <= cha_id <= max:
+					if min_chall <= cha_id <= max_chall:
 						argv_dict["cha_id"] = cha_id
 					else:
-						raise Exception(f"Challenge out of the range {min}-{max} range.")
+						raise Exception(f"Challenge out of the range {min_chall}-{max_chall} range.")
 				else:
 					raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
 				if argv[2] not in argv_dict:
@@ -786,17 +801,33 @@ class ChallengeSystem:
 				else:
 					argv_dict[argv[2]] = True
 			return argv_dict	
-			
-		if len(argv) == 1:
-			return
-		argv_dict = __get_validated_argv_dict(argv)
+		
+		if len(argv) != 1:
+			argv_dict = __get_validated_argv_dict(argv)
+		else:
+			argv_dict = {
+				"cha_id": get_int("Insertar challenge id: ", min=min_chall, max=max_chall),
+				"post_all": get_boolean("Post all? "),
+				"post": get_boolean("Post one? "),
+				"delay": get_int("Initial delay?: "),
+				"confirmed": True,
+			}
+		
 		if argv_dict["post"]:
 			instance = self.CHALLENGES[argv_dict["cha_id"]]
-			instance.post(confirmed=True)
+			instance.post(
+				confirmed=argv_dict["confirmed"], 
+				delay=argv_dict["delay"]
+			)
 		elif argv_dict["post_all"]:
-			self.send_all_posts(argv_dict["cha_id"])
-			
-			
+			self.send_all_posts(
+				confirmed=argv_dict["confirmed"],
+				start_with=argv_dict["cha_id"], 
+				finish_at=min_chall, 
+				initial_delay=argv_dict["delay"], 
+				delay_between=7,
+			)
+
 	def get_challenge(self, hint=None):
 		min=1
 		max=len(self.CHALLENGES)
@@ -905,7 +936,7 @@ if __name__ == "__main__":
 	# SISTEMA.consult_03_player_vs_player("OTTO", "ECTH", print_em=True)
 	
 	
-	SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
 	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
@@ -916,4 +947,6 @@ if __name__ == "__main__":
 	SISTEMA.execute_argv_operations_if_any(sys.argv);
 	
 	"""3. SendToChlngUpdates"""
-	# SISTEMA.get_challenge(hint=None).post()
+	# SISTEMA.get_challenge(hint=None).post(confirmed=false, delay=0)
+
+
