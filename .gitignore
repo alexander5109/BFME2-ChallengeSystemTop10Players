@@ -5,3 +5,4 @@ mytoken.py
 *.pyc
 *.idea
 *.lnk
+*.env

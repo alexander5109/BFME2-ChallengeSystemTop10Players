@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime
 from pathlib import Path
 from icecream import ic
 import json
@@ -6,8 +6,10 @@ from functools import cached_property
 import requests
 import sys
 import time
-import mytoken
+# import SECRETS
+from dotenv import load_dotenv
 from typing import Union, Optional, cast, Any, Callable, Type, List, Dict # type: ignore
+import os
 
 # import csv
 # from bidict import bidict
@@ -15,10 +17,12 @@ from typing import Union, Optional, cast, Any, Callable, Type, List, Dict # type
 # from abc import ABC, abstractmethod
 	
 	
+load_dotenv()
+class SECRETS:
+    PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
+    TOKEN = os.environ["TOKEN"]
 	
 	
-	
-EmbedMessage = Dict[str, Any]
 	
 # //--------------------------------------------------------------------//
 # ;;---------------------ok. funciones.input--------------------------;;
@@ -34,28 +38,30 @@ def wait_minutes(minutes:int) -> None:
 		
 
 def get_int(msg:str , indent: int=0, show_error: bool=True, min:Optional[int]=None, max:Optional[int]=None) -> int:
+	tab = '\t'
 	while True:
 		if min and max:
-			ingreso = input(f"{'\t'*indent}{msg} (Min:{min},Max:{max}): ")
+			ingreso = input(f"{tab*indent}{msg} (Min:{min},Max:{max}): ")
 		elif min:
-			ingreso = input(f"{'\t'*indent}{msg} (Min:{min}): ")
+			ingreso = input(f"{tab*indent}{msg} (Min:{min}): ")
 		elif max:
-			ingreso = input(f"{'\t'*indent}{msg} (Max:{max}): ")
+			ingreso = input(f"{tab*indent}{msg} (Max:{max}): ")
 		else:
-			ingreso = input(f"{'\t'*indent}{msg}")
+			ingreso = input(f"{tab*indent}{msg}")
 		try: 
 			num = int(ingreso)
 			if (min is None or num >= min) and (max is None or num <= max):
 				return num
 			else:
-				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' esta fuera del rango {min}-{max}.")
+				print(f"{tab*(indent+1)}Error de ingreso: '{ingreso}' esta fuera del rango {min}-{max}.")
 		except ValueError:
 			if show_error:
-				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' no es un numero.")
+				print(f"{tab*(indent+1)}Error de ingreso: '{ingreso}' no es un numero.")
 
 def get_boolean(msg:str, letra1:str="Y", letra2:str="N", indent:int=0) -> bool:	
 	while True:
-		ingreso = input(f"{'\t'*indent}{msg} Ingrese {letra1}/{letra2}: ").upper()
+		tab = '\t'
+		ingreso = input(f"{tab*indent}{msg} Ingrese {letra1}/{letra2}: ").upper()
 		if ingreso == letra1:
 			return True
 		elif ingreso == letra2:
@@ -253,7 +259,7 @@ class ChallengeEvent():
 		raise NotImplementedError("This method should be overridden by subclasses")
 		
 	@cached_property
-	def embed(self) -> EmbedMessage:
+	def embed(self) -> Dict[str, Any]:
 		"ChallengeEvent - abstract method to be implemented by subclasses"
 		raise NotImplementedError("This method should be overridden by subclasses")
 	
@@ -280,7 +286,7 @@ class ChallengeEvent():
 		"ChallengeEvent - abstract method to be implemented by subclasses"
 		raise NotImplementedError("This method should be overridden by subclasses")
 
-	def _08_base_embed(self) -> EmbedMessage:
+	def _08_base_embed(self) -> Dict[str, Any]:
 		return {
 			"color": self.embed_color,
 			"title": "A new Challenge has been registered!",
@@ -290,7 +296,8 @@ class ChallengeEvent():
 				f"- Update {self.fecha}\n"
 				"```"
 			),
-			"timestamp": datetime.now(UTC).isoformat(),
+			# "timestamp": datetime.now(UTC).isoformat(),
+			"timestamp": "TEST",
 			"footer": {"text": "Let the challenges continue!"},
 		}
 		
@@ -366,14 +373,14 @@ class NormalChallenge(ChallengeEvent):
 	
 	###--------------------NormalChallenge.Properties-------------###
 	@cached_property
-	def embed(self) -> EmbedMessage:
+	def embed(self) -> Dict[str, Any]:
 		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
 		if self.games2v2:
 			score += (
 				f"\n- **Score 2vs2**: {self.winner.wins2v2}-{self.loser.wins2v2} for **{self.winner.history.name}**"
 				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
 			)
-		embed: EmbedMessage = self._08_base_embed() | {
+		embed: Dict[str, Any] = self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
 					"value": (
@@ -509,7 +516,7 @@ class NoScoreChallenge(ChallengeEvent):
 	
 	###---------------NoScoreChallenge.Properties---------------###
 	@cached_property
-	def embed(self) -> EmbedMessage:
+	def embed(self) -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
@@ -584,7 +591,7 @@ class KickAddChallenge(ChallengeEvent):
 	
 	###----------------KickAddChallenge.Protected.Properties-------------###
 	@cached_property
-	def embed(self) -> EmbedMessage:
+	def embed(self) -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Kick-Add Update",
@@ -716,7 +723,8 @@ class PlayerInChallenge:
 
 class ChallengeSystem:
 	TOP_OF = 9 # 14 # 20
-	def __init__(self, chareps: Path, chacsv: Path, chalog: Path, status: Path, player_data: dict[str, dict[str, dict[str, list[str]]]], webhook_url:str):
+	def __init__(self, chareps: Path, chacsv: Path, chalog: Path, status: Path, players_json: Path, webhook_url:str):
+		player_data: dict[str, dict[str, dict[str, list[str]]]] = json.load(open(players_json))
 		self.chareps = chareps
 		self.chacsv = chacsv
 		self.chalog = chalog
@@ -921,12 +929,12 @@ class ChallengeSystem:
 #-------------------------------------------------------------------------------------------------------------#
 
 SISTEMA = ChallengeSystem(
-	player_data = json.load(open(r"data\players.json")),
-	chareps = Path.cwd() / r"replays",
-	chacsv = Path.cwd() / r"data\challenges.csv",
-	chalog = Path.cwd() / r"output\challenges.log",
-	status = Path.cwd() / r"output\status.log",
-	webhook_url = mytoken.PIG_WEB_HOOK
+	players_json = Path.cwd() / "data" / "players.json",
+	chareps = Path(r"replays"),
+	chacsv = Path(r"data/challenges.csv"),
+	chalog = Path(r"output/challenges.log"),
+	status = Path(r"output/status.log"),
+	webhook_url = SECRETS.PIG_WEB_HOOK
 )
 
 
