@@ -79,6 +79,7 @@ class ChannelID(Enum):
 class RandomMatchGenerator:
 	@staticmethod
 	def string_random_match(player1="bumbi", player2="undy"):
+		bfme2maps_1v1 = ["asd", "asdf"]
 		bfme2factions = ["Men", "Elves", "Dwarves", "Isengard", "Mordor", "Goblins"]
 		result = f"""	{random.sample(bfme2factions, k=2)}
 			{player1} vs {player2}

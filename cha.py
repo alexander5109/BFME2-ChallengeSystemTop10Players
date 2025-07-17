@@ -2,26 +2,28 @@ from datetime import datetime
 from pathlib import Path
 from icecream import ic
 import json
+from shlex import split
 from functools import cached_property
 import requests
 import sys
 import time
-# import SECRETS
 from dotenv import load_dotenv
 from typing import Union, Optional, cast, Any, Callable, Type, List, Dict # type: ignore
 import os
-
+load_dotenv()
+class SECRETS:
+    PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
+    TOKEN = os.environ["TOKEN"]
+    TOKEN = os.environ["TOKEN"]
+	
+	
 # import csv
 # from bidict import bidict
 # import py7zr
 # from abc import ABC, abstractmethod
 	
 	
-load_dotenv()
-class SECRETS:
-    PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
-    TOKEN = os.environ["TOKEN"]
-	
+
 	
 	
 # //--------------------------------------------------------------------//
@@ -373,7 +375,7 @@ class NormalChallenge(ChallengeEvent):
 	
 	###--------------------NormalChallenge.Properties-------------###
 	@cached_property
-	def embed(self) -> Dict[str, Any]:
+	def embed(self: "NormalChallenge") -> Dict[str, Any]:
 		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
 		if self.games2v2:
 			score += (
@@ -420,30 +422,30 @@ class NormalChallenge(ChallengeEvent):
 		return embed
 		
 	@cached_property
-	def replays_dir(self):
+	def replays_dir(self: "NormalChallenge"):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------NormalChallenge.Protected.Methods-------------###
-	def _init_01_integrity_check(self) -> None:
+	def _init_01_integrity_check(self: "NormalChallenge") -> None:
 		"NormalChallenge - don't log me retarded numbers"
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
 		if self.winner.wins <= self.loser.wins:
 			raise Exception(f"Error de integridad: Como es posible que el ganador no tenga mas victorias que el perdedor?")
 			
-	def _init_02_impact_players_historial(self) -> None:
+	def _init_02_impact_players_historial(self: "NormalChallenge") -> None:
 		"NormalChallenge is the only one that impacts historial"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		self.winner.history.append_cha_win_lose(self.winner)
 		self.loser.history.append_cha_win_lose(self.loser)
 		
-	def _init_03_impact_system_top10_rank(self) -> None:
+	def _init_03_impact_system_top10_rank(self: "NormalChallenge") -> None:
 		"NormalChallenge - winner_takes_over"
 		if self.challenger is self.winner:
 			self.chasys._apply_a_take_over(self)
 
-	def _04_get_my_report(self) -> str:
+	def _04_get_my_report(self: "NormalChallenge") -> str:
 		def __report_01_report_defenseortakeover():
 			flawlessly = "flawlessly " if self.loser.wins == 0 else ""
 			if self.defender is self.winner:
@@ -468,7 +470,7 @@ class NormalChallenge(ChallengeEvent):
 			f"\n\nGames were played in {self.version}"
 		)
 		
-	def _05_str_who_challenged_who(self) -> str:
+	def _05_str_who_challenged_who(self: "NormalChallenge") -> str:
 		"""Comportamiento normal + traditional chlng reference"""
 		string = super()._05_str_who_challenged_who()
 		if self.games2v2:
@@ -476,28 +478,33 @@ class NormalChallenge(ChallengeEvent):
 		return string
 		
 
-	def _06_get_my_post(self, discord_message:str) -> requests.Response:
+	def _06_get_my_post(self: "NormalChallenge", discord_message:str) -> requests.Response:
+		print("NormalChallenge doing a _06_get_my_post") 
 		response = requests.post(
 			self.chasys.webhook_url,
 			data={"content": discord_message},
 			files={"file": open(self.replays_dir, "rb")}
 		)
+		# print(response.status_code)
 		if response.status_code != 200:
 			return response
 			
 		webhook_message = response.json()
+		# print(webhook_message)
 		message_id = webhook_message["id"]
 		webhook_url_edit = f"{self.chasys.webhook_url}/messages/{message_id}"
+		# print(webhook_url_edit)
 		edit_payload: dict[str, Any] = {
 			"content": discord_message,
 			"embeds": [self.embed]
 		}
+		print(edit_payload)
 		return requests.patch(
 			webhook_url_edit,
 			json=edit_payload
 		)
 	
-	def _07_rename_existing_replaypack(self, torename:str, compress:bool) -> None:
+	def _07_rename_existing_replaypack(self: "NormalChallenge", torename:str, compress:bool) -> None:
 		existing = self.chasys.chareps / torename
 		if existing.exists() and not self.replays_dir.exists():
 			existing.rename(self.chasys.chareps/self.replays_dir.name)
@@ -516,7 +523,7 @@ class NoScoreChallenge(ChallengeEvent):
 	
 	###---------------NoScoreChallenge.Properties---------------###
 	@cached_property
-	def embed(self) -> Dict[str, Any]:
+	def embed(self: "NoScoreChallenge") -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
@@ -546,17 +553,17 @@ class NoScoreChallenge(ChallengeEvent):
 		}
 	
 	###---------------NoScoreChallenge.Protected.Methods---------------###
-	def _init_01_integrity_check(self) -> None:
+	def _init_01_integrity_check(self: "NoScoreChallenge") -> None:
 		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 			
-	def _init_02_impact_players_historial(self) -> None:
+	def _init_02_impact_players_historial(self: "NoScoreChallenge") -> None:
 		"NoScoreChallenge is designed to not affect player winrate"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		
-	def _04_get_my_report(self) -> str:
+	def _04_get_my_report(self: "NoScoreChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
 			f"{self._05_str_who_challenged_who()}"
@@ -566,7 +573,8 @@ class NoScoreChallenge(ChallengeEvent):
 			f"\n\nNo wins or losses have been scored."
 		)
 			
-	def _06_get_my_post(self, discord_message:str) -> requests.Response:
+	def _06_get_my_post(self: "NoScoreChallenge", discord_message:str) -> requests.Response:
+		print("NoScoreChallenge doing a _06_get_my_post") 
 		if self.notes:
 			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
@@ -579,7 +587,7 @@ class NoScoreChallenge(ChallengeEvent):
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 			
-	def _07_rename_existing_replaypack(self, torename:str, compress:bool) -> None:
+	def _07_rename_existing_replaypack(self: "NoScoreChallenge", torename:str, compress:bool) -> None:
 		return None
 		
 	
@@ -591,7 +599,7 @@ class KickAddChallenge(ChallengeEvent):
 	
 	###----------------KickAddChallenge.Protected.Properties-------------###
 	@cached_property
-	def embed(self) -> Dict[str, Any]:
+	def embed(self: "KickAddChallenge") -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Kick-Add Update",
@@ -621,21 +629,21 @@ class KickAddChallenge(ChallengeEvent):
 		}
 		
 	###----------------KickAddChallenge.Protected.Methods-------------###
-	def _init_01_integrity_check(self) -> None:
+	def _init_01_integrity_check(self: "KickAddChallenge") -> None:
 		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
-	def _init_02_impact_players_historial(self) -> None:
+	def _init_02_impact_players_historial(self: "KickAddChallenge") -> None:
 		"KickAddChallenge is designed to not affect player winrate"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		
-	def _init_03_impact_system_top10_rank(self) -> None:
+	def _init_03_impact_system_top10_rank(self: "KickAddChallenge") -> None:
 		"KickAddChallenge - unique method"
 		self.chasys._apply_a_kick_add(self)
 		
-	def _04_get_my_report(self) -> str:
+	def _04_get_my_report(self: "KickAddChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
 			f"{self._05_str_who_challenged_who()}"
@@ -648,12 +656,13 @@ class KickAddChallenge(ChallengeEvent):
 		)
 		
 		
-	def _05_str_who_challenged_who(self) -> str:
+	def _05_str_who_challenged_who(self: "KickAddChallenge") -> str:
 		"""in Kick add Mode noone challenged anyone"""
 		return ""	
 			
 			
-	def _06_get_my_post(self, discord_message:str) -> requests.Response:
+	def _06_get_my_post(self: "KickAddChallenge", discord_message:str) -> requests.Response:
+		print("KickAddChallenge doing a _06_get_my_post") 
 		if self.notes:
 			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
@@ -806,55 +815,71 @@ class ChallengeSystem:
 			self.CHALLENGES[chakey].post(confirmed=True, delay=delay_between)
 			
 	def execute_argv_operations_if_any(self: "ChallengeSystem", argv: list[str]):
+		# Ejemplos esperados:
+		# py cha.py action:post id:374 initDelay:4
+		# py cha.py action:post_all id:372 initDelay:4 betweenDelay:7
+		
+		
+		argv_dict: dict[str, Any] = {
+			"action": "post", #or "postall"
+			"delay": 0,
+			"confirmed": False,
+		}
+
+		def parse_argv(argv: list[str]) -> dict[str, str]:
+			result = {}
+			for arg in argv[1:]:  # ignoramos el nombre del script
+				if ":" in arg:
+					key, value = arg.split(":", 1)
+					result[key] = value
+			return result
+
+		def coerce_types(raw: dict[str, str]) -> dict[str, Any]:
+			"""Convierte valores a los tipos esperados y valida."""
+			return {
+				"action": raw.get("action", "post"),
+				"cha_id": int(raw["id"]) if "id" in raw else None,
+				"delay": int(raw.get("initDelay", 0)),
+				"betweenDelay": int(raw.get("betweenDelay", 7)),
+				"confirmed": raw.get("confirmed", "true").lower() in ["true", "1", "yes"],
+			}
+		
 		min_chall = min(self.CHALLENGES)
 		max_chall = max(self.CHALLENGES)
-		def __get_validated_argv_dict(argv: list[str]) -> dict[str, Any]:
-			argv_dict: dict[str, Any] = {
-				"cha_id": None,
-				"post": None,
-				"post_all": None,
-				"confirmed": False,
-			}
-			if len(argv) > 2:
-				if argv[1].isnumeric():
-					cha_id = int(argv[1])
-					if min_chall <= cha_id <= max_chall:
-						argv_dict["cha_id"] = cha_id
-					else:
-						raise Exception(f"Challenge out of the range {min_chall}-{max_chall} range.")
-				else:
-					raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
-				if argv[2] not in argv_dict:
-					raise Exception(f"Wrong argv: {argv[2]} is not a valid method")
-				else:
-					argv_dict[argv[2]] = True
-			return argv_dict	
-		
-		if len(argv) != 1:
-			argv_dict = __get_validated_argv_dict(argv)
+
+		if len(argv) > 1:
+			raw_dict = parse_argv(argv)
+			argv_dict = coerce_types(raw_dict)
 		else:
-			argv_dict: dict[str, Any] = {
+			argv_dict = {
 				"cha_id": get_int("Insertar challenge id: ", min=min_chall, max=max_chall),
-				"post_all": get_boolean("Post all? "),
-				"post": get_boolean("Post one? "),
+				"action": "post_all" if get_boolean("Post all? ") else "post",
 				"delay": get_int("Initial delay?: "),
+				"betweenDelay": get_int("Delay between posts?: ", min=0, max=7),
 				"confirmed": True,
 			}
-		
-		if argv_dict["post"]:
+
+		# Validaciones
+		if argv_dict["cha_id"] is None or not (min_chall <= argv_dict["cha_id"] <= max_chall):
+			raise Exception(f"Challenge ID inválido. Rango válido: {min_chall}-{max_chall}")
+
+		# Ejecución
+		if argv_dict["action"] == "post":
 			instance = self.CHALLENGES[argv_dict["cha_id"]]
 			instance.post(
-				confirmed=argv_dict["confirmed"], 
-				delay=argv_dict["delay"]
+				confirmed=argv_dict["confirmed"],
+				delay=argv_dict["delay"],
 			)
-		elif argv_dict["post_all"]:
+		elif argv_dict["action"] == "post_all":
 			self.send_all_posts(
 				confirmed=argv_dict["confirmed"],
-				start_with=argv_dict["cha_id"], 
-				finish_at=min_chall, 
-				initial_delay=argv_dict["delay"], 
-				delay_between=7,
+				start_with=argv_dict["cha_id"],
+				finish_at=min_chall,
+				initial_delay=argv_dict["delay"],
+				delay_between=argv_dict["betweenDelay"],
 			)
+		else:
+			raise Exception(f"Acción desconocida: {argv_dict['action']}")
 
 	def get_challenge(self: "ChallengeSystem", hint: Optional[int]) -> ChallengeEvent:
 		min=1
@@ -927,21 +952,22 @@ class ChallengeSystem:
 #-------------------------------------------------------------------------------------------------------------#
 #"""---------------------------------------------ok.Iniciar-------------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
-
-SISTEMA = ChallengeSystem(
-	players_json = Path.cwd() / "data" / "players.json",
-	chareps = Path(r"replays"),
-	chacsv = Path(r"data/challenges.csv"),
-	chalog = Path(r"output/challenges.log"),
-	status = Path(r"output/status.log"),
-	webhook_url = SECRETS.PIG_WEB_HOOK
-)
-
-
-
-
-	
 if __name__ == "__main__":
+	SISTEMA = ChallengeSystem(
+		players_json = Path.cwd() / "data" / "players.json",
+		chareps = Path(r"replays"),
+		chacsv = Path(r"data/challenges.csv"),
+		chalog = Path(r"output/challenges.log"),
+		status = Path(r"output/status.log"),
+		webhook_url = SECRETS.PIG_WEB_HOOK
+	)
+	
+	
+	# SendDiscordWebhook(payload = BFME2_PAYLOAD_1, webhook_url=BFME2_DOWNLOAD_HOOK)
+	# SendDiscordWebhook(payload = BFME2_PAYLOAD_2, webhook_url=BFME2_ONLINE_HOOK)
+	
+	
+	
 	SISTEMA.write_chalog();
 	SISTEMA.write_status();
 	# SISTEMA.write_embeds();
