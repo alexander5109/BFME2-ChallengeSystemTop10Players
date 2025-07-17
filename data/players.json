@@ -11,6 +11,10 @@
         }
     },
     "active_players": {
+        "TARANTULA": {
+            "nicknames": ["Tarantula"],
+            "discord_ids": ["#tarantula211"]
+        },
         "NOOB4LIFE": {
             "nicknames": ["Noob4life"],
             "discord_ids": ["#mclk6104"]
