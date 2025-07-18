@@ -14,15 +14,6 @@ load_dotenv()
 class SECRETS:
     PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
     TOKEN = os.environ["TOKEN"]
-    TOKEN = os.environ["TOKEN"]
-	
-	
-# import csv
-# from bidict import bidict
-# import py7zr
-# from abc import ABC, abstractmethod
-	
-	
 
 	
 	
@@ -891,9 +882,6 @@ class ChallengeSystem:
 	def consult_03_player_vs_player(self:"ChallengeSystem", p1_key:str, p2_key:str, print_em:bool):
 		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
 		
-	# def consult_04_who_is_black(self, pname):
-		# ic(self.PLAYERS[pname].is_black)
-	
 	# def consult_05_2v2_score(self, pname):
 		# ic(self.PLAYERS[pname].wins2v2_total)
 		# ic(self.PLAYERS[pname].loses2v2_total)
@@ -988,7 +976,6 @@ if __name__ == "__main__":
 	
 	
 	# SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
-	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
 	"""2. Argv"""
