@@ -79,19 +79,43 @@ class Top10Impacter:
 	def impactTop10Normal(event: "ChallengeEvent"):
 		"NormalChallenge - winner_takes_over"
 		if event.challenger is event.winner:
-			ChaSys._apply_a_take_over(event)
+			# if not isinstance(event, (NormalChallenge, NoScoreChallenge)):
+			# 	raise Exception(f"Wtf class? {type(event)}")
+			BaseDeDatos.top10list.remove(event.winner.history) 
+			BaseDeDatos.top10list.insert(event.loser.history.get_rank(), event.winner.history) 
 
 	@staticmethod 
 	def impactTop10Challengeless(event: "ChallengeEvent"):
 		"KickAddChallenge - unique method"
-		ChaSys._apply_a_kick_add(event)
+		# if not isinstance(event, KickAddChallenge):
+		# 	raise Exception(f"Wtf class? {type(event)}")
+		BaseDeDatos.top10list.remove(event.loser.history)
+		BaseDeDatos.top10list.remove(event.winner.history)
+		BaseDeDatos.top10list.insert(ChaSys.TOP_OF, event.loser.history)
+		BaseDeDatos.top10list.insert(ChaSys.TOP_OF, event.winner.history)
 		
 		
 class EmbedBuilders:
-	@staticmethod 
-	def GetNoScoreChallengeEmbed(event: "ChallengeEvent") -> Dict[str, Any]:
+	@classmethod 
+	def __base_embed(cls: Type["EmbedBuilders"], event: "ChallengeEvent") -> Dict[str, Any]:
+		return {
+			"color": event.embed_color,
+			"title": "A new Challenge has been registered!",
+			"description": (
+				"```diff\n"
+				f"- Challenge № {event.id}\n"
+				f"- Update {event.fecha}\n"
+				"```"
+			),
+			"timestamp": datetime.now(timezone.utc).isoformat(),
+			"footer": {"text": "Let the challenges continue!"},
+		}
+		
+		
+	@classmethod 
+	def GetNoScoreChallengeEmbed(cls: Type["EmbedBuilders"], event: "ChallengeEvent") -> Dict[str, Any]:
 		#NoScoreChallenge behavior
-		return event._08_base_embed() | {
+		return cls.__base_embed(event) | {
 			"fields": [{
 					"name": "Players",
 					"value": (
@@ -119,10 +143,10 @@ class EmbedBuilders:
 				}],
 		}
 		
-	@staticmethod
-	def GetKickAddChallengeEmbed(event: "ChallengeEvent") -> Dict[str, Any]:
+	@classmethod
+	def GetKickAddChallengeEmbed(cls: Type["EmbedBuilders"], event: "ChallengeEvent") -> Dict[str, Any]:
 		#KickAddChallenge behavior
-		return event._08_base_embed() | {
+		return cls.__base_embed(event) | {
 			"fields": [{
 					"name": "Kick-Add Update",
 					"value": (
@@ -150,8 +174,8 @@ class EmbedBuilders:
 			],
 		}
 		
-	@staticmethod 
-	def GetNormalChallengeEmbed(event: "ChallengeEvent") -> Dict[str, Any]:
+	@classmethod 
+	def GetNormalChallengeEmbed(cls: Type["EmbedBuilders"], event: "ChallengeEvent") -> Dict[str, Any]:
 		#NormalChallenge behavior
 		score = f"- **Score 1vs1**: {event.winner.wins1v1}-{event.loser.wins1v1} for **{event.winner.history.name}**"
 		if event.games2v2:
@@ -159,7 +183,7 @@ class EmbedBuilders:
 				f"\n- **Score 2vs2**: {event.winner.wins2v2}-{event.loser.wins2v2} for **{event.winner.history.name}**"
 				f"\n- **Total Score**: {event.winner.wins}-{event.loser.wins} for **{event.winner.history.name}**"
 			)
-		embed: Dict[str, Any] = event._08_base_embed() | {
+		embed: Dict[str, Any] = cls.__base_embed(event) | {
 			"fields": [{
 					"name": "Players",
 					"value": (
@@ -386,21 +410,18 @@ class PlayerHistory:
 		self.wins_total = 0
 		self.wins1v1_total = 0
 		self.wins2v2_total = 0
-		
 		self.games_played_total = 0
 		self.games_played_1v1 = 0
 		self.games_played_2v2 = 0
 		
-		
-		
 	###----------------PlayerHistory.Public.Methods------------###
-	def append_cha(self:"PlayerHistory", challenge:"ChallengeEvent"):
+	def append_cha(self:"PlayerHistory", challenge:"ChallengeEvent") -> None:
 		self.challenges.append(challenge)
 		self.games_played_total += challenge.games_total
 		self.games_played_1v1 += challenge.games1v1
 		self.games_played_2v2 += challenge.games2v2
 		
-	def append_cha_win_lose(self:"PlayerHistory", player_in_chall:"PlayerInChallenge"):
+	def append_cha_win_lose(self:"PlayerHistory", player_in_chall:"PlayerInChallenge") -> None:
 		self.wins_total += player_in_chall.wins
 		self.wins1v1_total += player_in_chall.wins1v1
 		self.wins2v2_total += player_in_chall.wins2v2
@@ -409,10 +430,10 @@ class PlayerHistory:
 		else:
 			self.cha_loses += 1
 	
-	def get_status(self):
+	def get_status(self) -> str:
 		return f"|{self.key}|\tRank:{self.get_rank()}\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 		
-	def get_rank(self):
+	def get_rank(self) -> int:
 		return BaseDeDatos.top10list.index(self)
 		
 	def get_1v1_vs(self:"PlayerHistory", other:"PlayerHistory", print_em:bool=True) -> Optional[bool]:
@@ -436,40 +457,40 @@ class PlayerHistory:
 		
 	###--------------------PlayerHistory.Public.Properties----------------###
 	@cached_property
-	def name(self):
+	def name(self) -> str:
 		return self.names[0]
 
 	@cached_property
-	def loses_total(self):
+	def loses_total(self) -> int:
 		return self.games_played_total - self.wins_total
 		
 	@cached_property	
-	def loses_1v1_total(self):
+	def loses_1v1_total(self) -> int:
 		return self.games_played_1v1 - self.wins1v1_total
 		
 	@cached_property	
-	def loses2v2_total(self):
+	def loses2v2_total(self) -> int:
 		return self.games_played_2v2 - self.wins2v2_total
 	
 	@cached_property
-	def fecha_de_alta(self):
-		return self.challenges[0]
+	def fecha_de_alta(self) -> datetime:
+		return self.challenges[0].date
 
 	###--------------------PlayerHistory.Dunder.Methods----------------###
-	def __lt__(self:"PlayerHistory", other:"PlayerHistory"):
+	def __lt__(self:"PlayerHistory", other:"PlayerHistory") -> bool:
 		return self.key < other.key
 		
-	def __gt__(self:"PlayerHistory", other:"PlayerHistory"):
+	def __gt__(self:"PlayerHistory", other:"PlayerHistory") -> bool:
 		def get_cha_winrate(player:"PlayerHistory"):
 			return (player.wins1v1_total / player.games_played_total) * 100.0 if player.games_played_total != 0 else 0
 			
 		bol = self.get_1v1_vs(other, print_em=False)
 		if bol is None:
-			bol = get_cha_winrate(self)  > get_cha_winrate(other)
+			bol = get_cha_winrate(self) > get_cha_winrate(other)
 		print(f"{self.key} better than {other.key} = {bol}")
 		return bol
 
-	def __repr__(self:"PlayerHistory"):
+	def __repr__(self:"PlayerHistory") -> str:
 		return f"|{self.key}|\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 
 
@@ -502,33 +523,6 @@ class ChallengeEvent:
 	winner: 'PlayerInChallenge'
 	has_replays: bool
 	loser: 'PlayerInChallenge'
-	
-	def do_stuff(self):
-		self.check_integrity(self)
-		for player in {self.winner, self.loser}:
-			ChaSys.set_top10_rank(player)
-		
-		self.impact_players(self)
-		self.impact_top10(self)
-		self.top10string = self.__get_top10string()
-		
-		
-	def __eq__(self, other: object) -> bool:
-		if not isinstance(other, ChallengeEvent):
-			return NotImplemented
-		return self.id == other.id
-
-	def __hash__(self: "ChallengeEvent"):
-		return hash(self.id)
-	
-		
-	@cached_property
-	def embed(self) -> Dict[str, Any]:
-		return self.get_embed(self)
-		
-	@cached_property
-	def replays_dir(self: "ChallengeEvent") -> Path:
-		return ChaSys.chareps / f"Challenge{self.id}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
@@ -596,19 +590,37 @@ class ChallengeEvent:
 	
 	
 	###--------------------ChallengeEvent.Public.Methods-------------###
-	def preguntar_por_replaypack(self: "ChallengeEvent"):
+	def do_stuff(self: "ChallengeEvent") -> None:
+		self.check_integrity(self)
+		for player in {self.winner, self.loser}:
+			ChaSys.set_top10_rank(player)
+		
+		self.impact_players(self)
+		self.impact_top10(self)
+		self.top10string = ChaSys.get_top10string()
+			
+	def Rename_existing_replaypack(self: "ChallengeEvent", torename:str, compress:bool) -> None:
+		if self.has_replays:
+			existing = ChaSys.chareps / torename
+			if existing.exists() and not self.replays_dir.exists():
+				existing.rename(ChaSys.chareps/self.replays_dir.name)
+				print(f"* {torename} was renamed to {self.replays_dir.name}")
+			# if compress:
+				# ChallengeSystem.compress_folder(ideal)
+		
+		
+	def preguntar_por_replaypack(self: "ChallengeEvent") -> None:
 		if not self.has_replays:
 			return
 		while not self.replays_dir.exists():
 			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
 				sys.exit("Ok bye")
 				
-				
-	def as_row(self):
+	def as_row(self: "ChallengeEvent") -> str:
 		columns = map(lambda x: str(x), [self.id, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
 		return ";".join(columns)+"\n"
 		
-	def post(self: "ChallengeEvent", confirmed: bool, delay: int):
+	def post(self: "ChallengeEvent", confirmed: bool, delay: int) -> None:
 		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.id} to Chlng|Updates?"):
 			return
 		self.preguntar_por_replaypack()
@@ -622,60 +634,21 @@ class ChallengeEvent:
 		else:
 			print(f"Failed to send webhookof challenge Nº{self.id}: \n{response.status_code} - {response.text}")
 
-
-			
-	###--------------------ChallengeEvent.Protected.Methods-------------###
-		
-	def Rename_existing_replaypack(self: "ChallengeEvent", torename:str, compress:bool) -> None:
-		if self.has_replays:
-			existing = ChaSys.chareps / torename
-			if existing.exists() and not self.replays_dir.exists():
-				existing.rename(ChaSys.chareps/self.replays_dir.name)
-				print(f"* {torename} was renamed to {self.replays_dir.name}")
-			# if compress:
-				# ChallengeSystem.compress_folder(ideal)
-
-	def _08_base_embed(self) -> Dict[str, Any]:
-		return {
-			"color": self.embed_color,
-			"title": "A new Challenge has been registered!",
-			"description": (
-				"```diff\n"
-				f"- Challenge № {self.id}\n"
-				f"- Update {self.fecha}\n"
-				"```"
-			),
-			"timestamp": datetime.now(timezone.utc).isoformat(),
-			"footer": {"text": "Let the challenges continue!"},
-		}
-		
-	###--------------------ChallengeEvent.Private.Methods-------------###
-	def __get_top10string(self):
-		top10string = "\t\tTOP 10\n"
-		# ic(BaseDeDatos.top10list)
-		for i in range(ChaSys.TOP_OF, -1, -1):	#iterar del 9 al 0
-			if i >= len(BaseDeDatos.top10list):
-				continue
-			player = BaseDeDatos.top10list[i]
-			top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
-		return top10string
-		
-		
 	###--------------------ChallengeEvent.Properties-------------###
 	@cached_property
-	def fecha(self):
+	def fecha(self: "ChallengeEvent") -> str:
 		return self.date.strftime('%Y-%m-%d')
 		
 	@cached_property
-	def games_total(self) -> int:
+	def games_total(self: "ChallengeEvent") -> int:
 		return self.winner.wins + self.loser.wins
 		
 	@cached_property
-	def games1v1(self) -> int:
+	def games1v1(self: "ChallengeEvent") -> int:
 		return self.winner.wins1v1 + self.loser.wins1v1
 		
 	@cached_property
-	def games2v2(self) -> int:
+	def games2v2(self: "ChallengeEvent") -> int:
 		return self.winner.wins2v2 + self.loser.wins2v2
 			
 	@cached_property
@@ -683,11 +656,27 @@ class ChallengeEvent:
 		return self.winner if self.winner.rank > self.loser.rank else self.loser
 
 	@cached_property
-	def defender(self) -> "PlayerInChallenge":
+	def defender(self: "ChallengeEvent") -> "PlayerInChallenge":
 		return self.winner if self.challenger is self.loser else self.loser
 		
-	
+	@cached_property
+	def embed(self: "ChallengeEvent") -> Dict[str, Any]:
+		return self.get_embed(self)
+		
+	@cached_property
+	def replays_dir(self: "ChallengeEvent") -> Path:
+		return ChaSys.chareps / f"Challenge{self.id}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
+		
 	###--------------------ChallengeEvent.Dunder.Methods----------------###
+		
+	def __eq__(self, other: object) -> bool:
+		if not isinstance(other, ChallengeEvent):
+			return NotImplemented
+		return self.id == other.id
+
+	def __hash__(self: "ChallengeEvent"):
+		return hash(self.id)
+		
 	def __lt__(self: "ChallengeEvent", other: "ChallengeEvent"):
 		return self.id < other.id
 		
@@ -721,25 +710,24 @@ class PlayerInChallenge:
 		self.wins1v1 = int(wins1v1)
 		self.wins2v2 = int(wins2v2)
 	###----------------PlayerInChallenge.Properties-------------###
-	
 	@cached_property
-	def wins(self):
+	def wins(self) -> int:
 		return self.wins1v1 + self.wins2v2
 	
 	@cached_property
-	def challenge(self):
+	def challenge(self) -> ChallengeEvent:
 		return BaseDeDatos.CHALLENGES[self.challenge_id]
 		
 	@cached_property
-	def previous_challenge(self):
+	def previous_challenge(self) -> ChallengeEvent:
 		return self.history.challenges[self.history.challenges.index(self.challenge)-1]
 		
 	@cached_property
-	def days_since_last_chall(self):
+	def days_since_last_chall(self) -> int:
 		return (self.challenge.date - self.previous_challenge.date).days
 		
 	@cached_property
-	def rank_ordinal(self):
+	def rank_ordinal(self) -> str:
 		ordinal = { 
 			0: "1st", 1: "2nd", 2: "3rd", 3: "4th", 4: "5th", 5: "6th", 6: "7th", 7: "8th", 8: "9th", 
 			9: "10th",
@@ -753,11 +741,11 @@ class PlayerInChallenge:
 		return ordinal.get(self.rank, "from outside the list")
 		
 	@cached_property
-	def history(self):
+	def history(self) -> PlayerHistory:
 		return BaseDeDatos.PLAYERS[self.key]
 
 	###--------------------PlayerInChallenge.Dunder.Methods----------------###
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return f"|{self.key}|"
 
 
@@ -815,19 +803,27 @@ class ChallengeSystem:
 	PLAYERS:dict[str, PlayerHistory]
 	top10list:list[PlayerHistory]
 	CHALLENGES: dict[int, ChallengeEvent]
-	def __init__(self, chareps: Path, chalog: Path, status: Path, webhook_url:str):
+	def __init__(self, chareps: Path, chalog: Path, status: Path, webhook_url:str) -> None:
 		self.chareps = chareps
 		self.chalog = chalog
 		self.status = status
 		self.webhook_url = webhook_url
 	
-	def do_stuff(self):
+	###----------------ChallengeSystem.Public.Methods------------###
+	def do_stuff(self: "ChallengeSystem") -> None:
 		for challenge in BaseDeDatos.CHALLENGES.values():
 			challenge.do_stuff()
 		
+	def get_top10string(self: "ChallengeSystem") -> str:
+		top10string = "\t\tTOP 10\n"
+		# ic(BaseDeDatos.top10list)
+		for i in range(self.TOP_OF, -1, -1):	#iterar del 9 al 0
+			if i >= len(BaseDeDatos.top10list):
+				continue
+			player = BaseDeDatos.top10list[i]
+			top10string += f"\t{i+1:<4}. {player.name:20} {player.cha_wins}-{player.cha_loses}\n"
+		return top10string
 	
-	
-	###----------------ChallengeSystem.Protected.Methods------------###
 	def set_top10_rank(self: "ChallengeSystem", player:PlayerInChallenge) -> None:
 		try:
 			player.rank = BaseDeDatos.top10list.index(player.history)
@@ -835,37 +831,20 @@ class ChallengeSystem:
 			BaseDeDatos.top10list.append(player.history)
 			player.rank = BaseDeDatos.top10list.index(player.history)
 	
-	def _apply_a_kick_add(self: "ChallengeSystem", challenge:ChallengeEvent):
-		# if not isinstance(challenge, KickAddChallenge):
-		# 	raise Exception(f"Wtf class? {type(challenge)}")
-		BaseDeDatos.top10list.remove(challenge.loser.history)
-		BaseDeDatos.top10list.remove(challenge.winner.history)
-		BaseDeDatos.top10list.insert(self.TOP_OF, challenge.loser.history)
-		BaseDeDatos.top10list.insert(self.TOP_OF, challenge.winner.history)
-			
-			
-	def _apply_a_take_over(self: "ChallengeSystem", challenge:ChallengeEvent):
-		# if not isinstance(challenge, (NormalChallenge, NoScoreChallenge)):
-		# 	raise Exception(f"Wtf class? {type(challenge)}")
-		BaseDeDatos.top10list.remove(challenge.winner.history) 
-		BaseDeDatos.top10list.insert(challenge.loser.history.get_rank(), challenge.winner.history) 
-		
-	###----------------ChallengeSystem.Public.Methods------------###
-
-	def write_status(self: "ChallengeSystem"):
+	def write_status(self: "ChallengeSystem") -> None:
 		super_string = "\n".join(str(player.get_status()) for player in sorted( BaseDeDatos.PLAYERS.values() ))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
 			
-	def write_embeds(self: "ChallengeSystem"):
+	def write_embeds(self: "ChallengeSystem") -> None:
 		all_instances = {cha.id: cha.embed for cha in reversed(BaseDeDatos.CHALLENGES.values())}
 		filepath = r"output\embeds.json"
 		with open(filepath, "w") as json_file:
 			json.dump(all_instances, json_file, indent=4)
 			
 			
-	def write_chalog(self: "ChallengeSystem"):
+	def write_chalog(self: "ChallengeSystem") -> None:
 		# super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
 		super_string = f"##AutoGenerated by 'ChallengeSystem'\nRegards, Bambi\n\n"
 		for num, cha in enumerate( sorted( BaseDeDatos.CHALLENGES.values(),reverse=True ) , start=1):
@@ -878,19 +857,17 @@ class ChallengeSystem:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
 	
-	def send_all_posts(self: "ChallengeSystem", confirmed:bool, start_with:int, finish_at: int, initial_delay: int, delay_between: int):
+	def send_all_posts(self: "ChallengeSystem", confirmed:bool, start_with:int, finish_at: int, initial_delay: int, delay_between: int) -> None:
 		if not confirmed and not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{finish_at} in {initial_delay} minutes each {delay_between} minutes"):
 			return
 		BaseDeDatos.CHALLENGES[start_with].post(confirmed=True, delay=initial_delay)
 		for chakey in range(start_with+1, finish_at+1):
 			BaseDeDatos.CHALLENGES[chakey].post(confirmed=True, delay=delay_between)
 			
-	def execute_argv_operations_if_any(self: "ChallengeSystem", argv: list[str]):
+	def execute_argv_operations_if_any(self: "ChallengeSystem", argv: list[str]) -> None:
 		# Ejemplos esperados:
 		# py cha.py action:post id:374 initDelay:4
 		# py cha.py action:post_all id:372 initDelay:4 betweenDelay:7
-		
-		
 		argv_dict: dict[str, Any] = {
 			"action": "post", #or "postall"
 			"delay": 0,
@@ -960,15 +937,8 @@ class ChallengeSystem:
 		else:
 			raise Exception(f"Challenge of id {hint} not found. Logged challenges are between {min} and {max}.")
 
-	def consult_03_player_vs_player(self:"ChallengeSystem", p1_key:str, p2_key:str, print_em:bool):
+	def consult_03_player_vs_player(self:"ChallengeSystem", p1_key:str, p2_key:str, print_em:bool) -> Optional[bool]:
 		return BaseDeDatos.PLAYERS[p1_key].get_1v1_vs(BaseDeDatos.PLAYERS[p2_key], print_em=print_em)
-		
-	# def consult_05_2v2_score(self, pname):
-		# ic(BaseDeDatos.PLAYERS[pname].wins2v2_total)
-		# ic(BaseDeDatos.PLAYERS[pname].loses2v2_total)
-
-	
-		
 		
 	###----------------ChallengeSystem.Static.Methods------------###
 	# @staticmethod
