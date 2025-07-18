@@ -1,22 +1,29 @@
-from datetime import datetime, UTC
 from pathlib import Path
 from icecream import ic
 import json
+# from shlex import split
 from functools import cached_property
+from datetime import datetime, timezone
 import requests
 import sys
 import time
-import mytoken
-
-
+from dotenv import load_dotenv
+from typing import Union, Optional, cast, Any, Callable, Type, List, Dict # type: ignore
+import os
+load_dotenv()
+class SECRETS:
+    PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
+    TOKEN = os.environ["TOKEN"]
+    TOKEN = os.environ["TOKEN"]
+	
+	
 # import csv
 # from bidict import bidict
 # import py7zr
 # from abc import ABC, abstractmethod
 	
 	
-	
-	
+
 	
 	
 # //--------------------------------------------------------------------//
@@ -26,25 +33,37 @@ import mytoken
 		
 		
 		
-		
+def wait_minutes(minutes:int) -> None:
+	towait = minutes*60
+	print(f"Waiting {towait} minutes...")
+	time.sleep(towait)
 		
 
-def get_int(msg, indent=0, show_error=True, min=None, max=None):
+def get_int(msg:str , indent: int=0, show_error: bool=True, min:Optional[int]=None, max:Optional[int]=None) -> int:
+	tab = '\t'
 	while True:
-		ingreso = input(f"{'\t'*indent}{msg}")
+		if min and max:
+			ingreso = input(f"{tab*indent}{msg} (Min:{min},Max:{max}): ")
+		elif min:
+			ingreso = input(f"{tab*indent}{msg} (Min:{min}): ")
+		elif max:
+			ingreso = input(f"{tab*indent}{msg} (Max:{max}): ")
+		else:
+			ingreso = input(f"{tab*indent}{msg}")
 		try: 
 			num = int(ingreso)
 			if (min is None or num >= min) and (max is None or num <= max):
 				return num
 			else:
-				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' esta fuera del rango {min}-{max}.")
+				print(f"{tab*(indent+1)}Error de ingreso: '{ingreso}' esta fuera del rango {min}-{max}.")
 		except ValueError:
 			if show_error:
-				print(f"{'\t'*(indent+1)}Error de ingreso: '{ingreso}' no es un numero.")
+				print(f"{tab*(indent+1)}Error de ingreso: '{ingreso}' no es un numero.")
 
-def get_boolean(msg, letra1="Y", letra2="N", indent=0):	
+def get_boolean(msg:str, letra1:str="Y", letra2:str="N", indent:int=0) -> bool:	
 	while True:
-		ingreso = input(f"{'\t'*indent}{msg} Ingrese {letra1}/{letra2}: ").upper()
+		tab = '\t'
+		ingreso = input(f"{tab*indent}{msg} Ingrese {letra1}/{letra2}: ").upper()
 		if ingreso == letra1:
 			return True
 		elif ingreso == letra2:
@@ -62,15 +81,15 @@ def get_boolean(msg, letra1="Y", letra2="N", indent=0):
 #"""-------------------------------------------PlayerHistory.Class.01---------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
 class PlayerHistory:
-	def __init__(self, chasys, key, value):
+	def __init__(self, chasys:"ChallengeSystem", key:str, value:dict[str,list[str]]):
 		self.chasys = chasys
-		self.key = key
+		self.key:str = key
 		self.names = value["nicknames"]
 		# self.discord_id = value["discord_id"]
 
 		self.cha_wins = 0
 		self.cha_loses = 0
-		self.challenges = []
+		self.challenges:list[ChallengeEvent] = []
 		self.wins_total = 0
 		self.wins1v1_total = 0
 		self.wins2v2_total = 0
@@ -82,13 +101,13 @@ class PlayerHistory:
 		
 		
 	###----------------PlayerHistory.Public.Methods------------###
-	def append_cha(self, challenge):
+	def append_cha(self:"PlayerHistory", challenge:"ChallengeEvent"):
 		self.challenges.append(challenge)
 		self.games_played_total += challenge.games_total
 		self.games_played_1v1 += challenge.games1v1
 		self.games_played_2v2 += challenge.games2v2
 		
-	def append_cha_win_lose(self, player_in_chall):
+	def append_cha_win_lose(self:"PlayerHistory", player_in_chall:"PlayerInChallenge"):
 		self.wins_total += player_in_chall.wins
 		self.wins1v1_total += player_in_chall.wins1v1
 		self.wins2v2_total += player_in_chall.wins2v2
@@ -103,9 +122,9 @@ class PlayerHistory:
 	def get_rank(self):
 		return self.chasys.top10list.index(self)
 		
-	def get_1v1_vs(self, other, print_em=True):
-		self_wins = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
-		other_wins = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
+	def get_1v1_vs(self:"PlayerHistory", other:"PlayerHistory", print_em:bool=True) -> Optional[bool]:
+		self_wins:set[ChallengeEvent] = {cha for cha in self.challenges if cha.winner.history == self and cha.loser.history == other}
+		other_wins:set[ChallengeEvent] = {cha for cha in self.challenges if cha.winner.history == other and cha.loser.history == self}
 		ic(self_wins)
 		self_wins_len = len(self_wins)
 		other_wins_len = len(other_wins)
@@ -144,11 +163,11 @@ class PlayerHistory:
 		return self.challenges[0]
 
 	###--------------------PlayerHistory.Dunder.Methods----------------###
-	def __lt__(self, other):
+	def __lt__(self:"PlayerHistory", other:"PlayerHistory"):
 		return self.key < other.key
 		
-	def __gt__(self, other):
-		def get_cha_winrate(player):
+	def __gt__(self:"PlayerHistory", other:"PlayerHistory"):
+		def get_cha_winrate(player:"PlayerHistory"):
 			return (player.wins1v1_total / player.games_played_total) * 100.0 if player.games_played_total != 0 else 0
 			
 		bol = self.get_1v1_vs(other, print_em=False)
@@ -157,7 +176,7 @@ class PlayerHistory:
 		print(f"{self.key} better than {other.key} = {bol}")
 		return bol
 
-	def __repr__(self):
+	def __repr__(self:"PlayerHistory"):
 		return f"|{self.key}|\t|Wins:{self.cha_wins}|Loses:{self.cha_loses}"
 
 
@@ -174,10 +193,11 @@ class PlayerHistory:
 #------------------------------------------------------------------------------------------#
 # Define an interface
 class ChallengeEvent():
-	def __init__(self, chasys, key, row):
+	def __init__(self, chasys:"ChallengeSystem", key:int, row:dict[str, str], embed_color:int):
 		self.chasys = chasys
 		self.key = key
 		self.row = row
+		self.embed_color = embed_color
 		self.version = row["version"]
 		self.date = datetime.strptime(row["date"], '%Y-%m-%d')
 		self.notes = row['notes']
@@ -188,29 +208,38 @@ class ChallengeEvent():
 		self._init_03_impact_system_top10_rank()
 		self.top10string = self.__get_top10string()
 	
-	
-	
 	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
-	def new_from_row(cls, chasys, key, version, row_dict):
+	def new_from_row(cls:Type["ChallengeEvent"], chasys:"ChallengeSystem", key:int, version:str, row_dict:dict[str, str]) -> "ChallengeEvent":
 		if version == "NO_SCORE_MODE":
-			return NoScoreChallenge(chasys, key, row_dict)
+			return NoScoreChallenge(chasys, key, row_dict, embed_color=0xFFA500)  # Orange color for NoScoreChallenge
 		elif version == "KICK_ADD_MODE":
-			return KickAddChallenge(chasys, key, row_dict)
+			return KickAddChallenge(chasys, key, row_dict, embed_color=0x981D98)  # Purple color for KickAddChallenge
 		else:
-			return NormalChallenge(chasys, key, row_dict)
+			return NormalChallenge(chasys, key, row_dict, embed_color=0x5DD9DF)  # Blueish default color for NormalChallenge
 					
 	
 	
 	
 	###--------------------ChallengeEvent.Public.Methods-------------###
+	def preguntar_por_replaypack(self: "ChallengeEvent"):
+		if self.replays_dir is None:
+			return
+		while not self.replays_dir.exists():
+			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
+				sys.exit("Ok bye")
+				
+				
 	def as_row(self):
 		columns = map(lambda x: str(x), [self.key, self.version, self.winner.history.key, self.winner.wins1v1, self.winner.wins2v2, self.loser.history.key, self.loser.wins1v1, self.loser.wins2v2, self.fecha, self.notes])
 		return ";".join(columns)+"\n"
 		
-	def post(self, confirmed=False):
+	def post(self: "ChallengeEvent", confirmed: bool, delay: int):
 		if not confirmed and not get_boolean(f"\tConfirm send challenge Nº{self.key} to Chlng|Updates?"):
 			return
+		self.preguntar_por_replaypack()
+		if delay:
+			wait_minutes(delay)
 		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
 		response = self._06_get_my_post(discord_message)
 		
@@ -222,19 +251,44 @@ class ChallengeEvent():
 
 			
 	###--------------------ChallengeEvent.Protected.Methods-------------###
-	def _init_03_impact_system_top10_rank(self):
+	
+	def _init_01_integrity_check(self)-> None:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
+	
+	def _init_02_impact_players_historial(self) -> None:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
+		
+	@cached_property
+	def embed(self) -> Dict[str, Any]:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
+	
+	def _init_03_impact_system_top10_rank(self) -> None:
 		"ChallengeEvent - winner_takes_over"
 		if self.challenger is self.winner:
 			self.chasys._apply_a_take_over(self)
+
+	def _04_get_my_report(self) -> str:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
 			
-	def _05_str_who_challenged_who(self):
+	def _05_str_who_challenged_who(self) -> str:
 		"ChallengeEvent - Comportamiento normal"
 		return (
 			f"\n\n{self.challenger.history.name} ({self.challenger.rank_ordinal}) has challenged "
 			f"{self.defender.history.name} ({self.defender.rank_ordinal}) for his spot."
 		)
+	def _06_get_my_post(self, discord_message:str) -> requests.Response:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
 		
-	def _08_base_embed(self):
+	def _07_rename_existing_replaypack(self, torename:str, compress:bool) -> None:
+		"ChallengeEvent - abstract method to be implemented by subclasses"
+		raise NotImplementedError("This method should be overridden by subclasses")
+
+	def _08_base_embed(self) -> Dict[str, Any]:
 		return {
 			"color": self.embed_color,
 			"title": "A new Challenge has been registered!",
@@ -244,7 +298,7 @@ class ChallengeEvent():
 				f"- Update {self.fecha}\n"
 				"```"
 			),
-			"timestamp": datetime.now(UTC).isoformat(),
+			"timestamp": datetime.now(timezone.utc).isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
 		
@@ -266,38 +320,38 @@ class ChallengeEvent():
 		return self.date.strftime('%Y-%m-%d')
 		
 	@cached_property
-	def replays_dir(self):
+	def replays_dir(self) -> Optional[Path]:
 		return None
 		
 	@cached_property
-	def games_total(self):
+	def games_total(self) -> int:
 		return self.winner.wins + self.loser.wins
 		
 	@cached_property
-	def games1v1(self):
+	def games1v1(self) -> int:
 		return self.winner.wins1v1 + self.loser.wins1v1
 		
 	@cached_property
-	def games2v2(self):
+	def games2v2(self) -> int:
 		return self.winner.wins2v2 + self.loser.wins2v2
 			
 	@cached_property
-	def challenger(self):
+	def challenger(self: "ChallengeEvent") -> "PlayerInChallenge":
 		return self.winner if self.winner.rank > self.loser.rank else self.loser
 
 	@cached_property
-	def defender(self):
+	def defender(self) -> "PlayerInChallenge":
 		return self.winner if self.challenger is self.loser else self.loser
 		
 	
 	###--------------------ChallengeEvent.Dunder.Methods----------------###
-	def __lt__(self, other):
+	def __lt__(self: "ChallengeEvent", other: "ChallengeEvent"):
 		return self.key < other.key
 		
-	def __repr__(self):
+	def __repr__(self: "ChallengeEvent"):
 		return f"|Cha{self.key}|{self.version}|{self.winner}{self.winner.wins}|{self.loser}{self.loser.wins}|"
 		
-	def __str__(self):
+	def __str__(self: "ChallengeEvent"):
 		return (
 			"\n------------------------------------"
 			f"\n{self.replays_dir.stem if self.replays_dir else 'NO_GAMES_NO_REPLAYS'}"
@@ -317,18 +371,17 @@ class ChallengeEvent():
 #"""---------------------------------NormalChallenge.Class.02----------------------------"""#
 #------------------------------------------------------------------------------------------#
 class NormalChallenge(ChallengeEvent):
-	embed_color = 0x5DD9DF ## Blueish
 	
 	###--------------------NormalChallenge.Properties-------------###
 	@cached_property
-	def embed(self):
+	def embed(self: "NormalChallenge") -> Dict[str, Any]:
 		score = f"- **Score 1vs1**: {self.winner.wins1v1}-{self.loser.wins1v1} for **{self.winner.history.name}**"
 		if self.games2v2:
 			score += (
 				f"\n- **Score 2vs2**: {self.winner.wins2v2}-{self.loser.wins2v2} for **{self.winner.history.name}**"
 				f"\n- **Total Score**: {self.winner.wins}-{self.loser.wins} for **{self.winner.history.name}**"
 			)
-		embed = self._08_base_embed() | {
+		embed: Dict[str, Any] = self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
 					"value": (
@@ -368,30 +421,30 @@ class NormalChallenge(ChallengeEvent):
 		return embed
 		
 	@cached_property
-	def replays_dir(self):
+	def replays_dir(self: "NormalChallenge"):
 		return self.chasys.chareps / f"Challenge{self.key}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------NormalChallenge.Protected.Methods-------------###
-	def _init_01_integrity_check(self):
+	def _init_01_integrity_check(self: "NormalChallenge") -> None:
 		"NormalChallenge - don't log me retarded numbers"
 		if not self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener juegos en un challenge tipo {self.version}.")
 		if self.winner.wins <= self.loser.wins:
 			raise Exception(f"Error de integridad: Como es posible que el ganador no tenga mas victorias que el perdedor?")
 			
-	def _init_02_impact_players_historial(self):
+	def _init_02_impact_players_historial(self: "NormalChallenge") -> None:
 		"NormalChallenge is the only one that impacts historial"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		self.winner.history.append_cha_win_lose(self.winner)
 		self.loser.history.append_cha_win_lose(self.loser)
 		
-	def _init_03_impact_system_top10_rank(self):
+	def _init_03_impact_system_top10_rank(self: "NormalChallenge") -> None:
 		"NormalChallenge - winner_takes_over"
 		if self.challenger is self.winner:
 			self.chasys._apply_a_take_over(self)
 
-	def _04_get_my_report(self):
+	def _04_get_my_report(self: "NormalChallenge") -> str:
 		def __report_01_report_defenseortakeover():
 			flawlessly = "flawlessly " if self.loser.wins == 0 else ""
 			if self.defender is self.winner:
@@ -416,42 +469,44 @@ class NormalChallenge(ChallengeEvent):
 			f"\n\nGames were played in {self.version}"
 		)
 		
-	def _05_str_who_challenged_who(self):
+	def _05_str_who_challenged_who(self: "NormalChallenge") -> str:
 		"""Comportamiento normal + traditional chlng reference"""
 		string = super()._05_str_who_challenged_who()
 		if self.games2v2:
 			string += "\nMode: Traditional challenge (4 games as 2vs2, 4 games as 1vs1, untie with 1vs1)."
 		return string
-	
+		
 
-	def _06_get_my_post(self, discord_message):
-		while not self.replays_dir.exists():
-			if not get_boolean(f"Replay pack not found: << {self.replays_dir.relative_to(self.replays_dir.parent.parent)} >> \n{self.replays_dir.stem}\n\tDo you want to make sure to rename replays accordingly and try again?"):
-				sys.exit("Ok bye")
+	def _06_get_my_post(self: "NormalChallenge", discord_message:str) -> requests.Response:
+		print("NormalChallenge doing a _06_get_my_post") 
 		response = requests.post(
 			self.chasys.webhook_url,
 			data={"content": discord_message},
 			files={"file": open(self.replays_dir, "rb")}
 		)
+		# print(response.status_code)
 		if response.status_code != 200:
 			return response
 			
 		webhook_message = response.json()
+		# print(webhook_message)
 		message_id = webhook_message["id"]
 		webhook_url_edit = f"{self.chasys.webhook_url}/messages/{message_id}"
-		edit_payload = {
+		# print(webhook_url_edit)
+		edit_payload: dict[str, Any] = {
 			"content": discord_message,
 			"embeds": [self.embed]
 		}
+		print(edit_payload)
 		return requests.patch(
 			webhook_url_edit,
 			json=edit_payload
 		)
 	
-	def _07_rename_existing_replaypack(self, torename, compress):
+	def _07_rename_existing_replaypack(self: "NormalChallenge", torename:str, compress:bool) -> None:
 		existing = self.chasys.chareps / torename
 		if existing.exists() and not self.replays_dir.exists():
-			existing.rename(self.replays_dir.name)
+			existing.rename(self.chasys.chareps/self.replays_dir.name)
 			print(f"* {torename} was renamed to {self.replays_dir.name}")
 		# if compress:
 			# ChallengeSystem.compress_folder(ideal)
@@ -464,11 +519,10 @@ class NormalChallenge(ChallengeEvent):
 #"""------------------------------NoScoreChallenge.Class.02------------------------"""#
 #------------------------------------------------------------------------------------------#
 class NoScoreChallenge(ChallengeEvent):
-	embed_color = 0xFFA500 ## BNomEacuerdo
 	
 	###---------------NoScoreChallenge.Properties---------------###
 	@cached_property
-	def embed(self):
+	def embed(self: "NoScoreChallenge") -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Players",
@@ -498,17 +552,17 @@ class NoScoreChallenge(ChallengeEvent):
 		}
 	
 	###---------------NoScoreChallenge.Protected.Methods---------------###
-	def _init_01_integrity_check(self):
+	def _init_01_integrity_check(self: "NoScoreChallenge") -> None:
 		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 			
-	def _init_02_impact_players_historial(self):
+	def _init_02_impact_players_historial(self: "NoScoreChallenge") -> None:
 		"NoScoreChallenge is designed to not affect player winrate"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		
-	def _04_get_my_report(self):
+	def _04_get_my_report(self: "NoScoreChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
 			f"{self._05_str_who_challenged_who()}"
@@ -518,20 +572,21 @@ class NoScoreChallenge(ChallengeEvent):
 			f"\n\nNo wins or losses have been scored."
 		)
 			
-	def _06_get_my_post(self, discord_message):
+	def _06_get_my_post(self: "NoScoreChallenge", discord_message:str) -> requests.Response:
+		print("NoScoreChallenge doing a _06_get_my_post") 
 		if self.notes:
 			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
 				"value": f"*- {self.notes}*",
 				"inline": False
 			})
-		payload = {
+		payload: dict[str, Any] = {
 			"content": discord_message,
 			"embeds": [self.embed]
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 			
-	def _07_rename_existing_replaypack(self, torename, compress):
+	def _07_rename_existing_replaypack(self: "NoScoreChallenge", torename:str, compress:bool) -> None:
 		return None
 		
 	
@@ -540,11 +595,10 @@ class NoScoreChallenge(ChallengeEvent):
 #"""------------------------------NoScoreChallenge.Class.02------------------------"""#
 #------------------------------------------------------------------------------------------#
 class KickAddChallenge(ChallengeEvent):
-	embed_color = 0x981D98 ## BNomEacuerdo
 	
 	###----------------KickAddChallenge.Protected.Properties-------------###
 	@cached_property
-	def embed(self):
+	def embed(self: "KickAddChallenge") -> Dict[str, Any]:
 		return self._08_base_embed() | {
 			"fields": [{
 					"name": "Kick-Add Update",
@@ -574,21 +628,21 @@ class KickAddChallenge(ChallengeEvent):
 		}
 		
 	###----------------KickAddChallenge.Protected.Methods-------------###
-	def _init_01_integrity_check(self):
+	def _init_01_integrity_check(self: "KickAddChallenge") -> None:
 		"NoScoreChallenge - don't log me with games"
 		if self.games_total:
 			raise Exception(f"Error en el csv. Los jugadores deben tener 0 wins en un challenge tipo {self.version}.")
 		
-	def _init_02_impact_players_historial(self):
+	def _init_02_impact_players_historial(self: "KickAddChallenge") -> None:
 		"KickAddChallenge is designed to not affect player winrate"
 		self.winner.history.append_cha(self)
 		self.loser.history.append_cha(self)
 		
-	def _init_03_impact_system_top10_rank(self):
+	def _init_03_impact_system_top10_rank(self: "KickAddChallenge") -> None:
 		"KickAddChallenge - unique method"
 		self.chasys._apply_a_kick_add(self)
 		
-	def _04_get_my_report(self):
+	def _04_get_my_report(self: "KickAddChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
 		return (
 			f"{self._05_str_who_challenged_who()}"
@@ -601,26 +655,27 @@ class KickAddChallenge(ChallengeEvent):
 		)
 		
 		
-	def _05_str_who_challenged_who(self):
+	def _05_str_who_challenged_who(self: "KickAddChallenge") -> str:
 		"""in Kick add Mode noone challenged anyone"""
 		return ""	
 			
 			
-	def _06_get_my_post(self, discord_message):
+	def _06_get_my_post(self: "KickAddChallenge", discord_message:str) -> requests.Response:
+		print("KickAddChallenge doing a _06_get_my_post") 
 		if self.notes:
 			self.embed["fields"].insert(-2,{
 				"name": "Comments: ",
 				"value": f"*- {self.notes}*",
 				"inline": False
 			})
-		payload = {
+		payload:dict[str, Any] = {
 			"content": discord_message,
 			"embeds": [self.embed]
 		}
 		return requests.post(self.chasys.webhook_url, json=payload)
 
 			
-	def _07_rename_existing_replaypack(self, torename, compress):
+	def _07_rename_existing_replaypack(self, torename:str, compress:bool) -> None:
 		return None
 
 
@@ -629,7 +684,7 @@ class KickAddChallenge(ChallengeEvent):
 #-------------------------------------------------------------------------------------------------------------#
 
 class PlayerInChallenge:
-	def __init__(self, challenge, key, wins1v1, wins2v2):
+	def __init__(self, challenge: ChallengeEvent, key: str, wins1v1: str, wins2v2: str):
 		self.challenge = challenge
 		self.history = self.challenge.chasys.PLAYERS[key]
 		self.wins1v1 = int(wins1v1)
@@ -647,10 +702,6 @@ class PlayerInChallenge:
 	@cached_property
 	def days_since_last_chall(self):
 		return (self.challenge.date - self.previous_challenge.date).days
-	
-	@cached_property
-	def history(self):
-		return 
 		
 	@cached_property
 	def rank_ordinal(self):
@@ -677,21 +728,23 @@ class PlayerInChallenge:
 #-------------------------------------------------------------------------------------------------------------#
 #"""---------------------------------------ChallengeSystem.Class.04-----------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
+
 class ChallengeSystem:
 	TOP_OF = 9 # 14 # 20
-	def __init__(self, chareps, chacsv, chalog, status, player_data, webhook_url):
+	def __init__(self, chareps: Path, chacsv: Path, chalog: Path, status: Path, players_json: Path, webhook_url:str):
+		player_data: dict[str, dict[str, dict[str, list[str]]]] = json.load(open(players_json))
 		self.chareps = chareps
 		self.chacsv = chacsv
 		self.chalog = chalog
 		self.status = status
 		self.webhook_url = webhook_url
-		self.PLAYERS = self.__read_PLAYERS(player_data["active_players"])
-		self.top10list = list(map(lambda x: self.PLAYERS[x], player_data["legacy"]["top10"]))
-		self.CHALLENGES = self.__read_CHALLENGES()
+		self.PLAYERS:dict[str, PlayerHistory] = self.__read_PLAYERS(player_data["active_players"])
+		self.top10list:list[PlayerHistory] = list(map(lambda x: self.PLAYERS[x], player_data["legacy"]["top10"]))
+		self.CHALLENGES: dict[int, ChallengeEvent] = self.__read_CHALLENGES()
 		
 		
 	###----------------ChallengeSystem.Protected.Methods------------###
-	def _get_index_or_append_if_new(self, player):
+	def _get_index_or_append_if_new(self: "ChallengeSystem", player:PlayerHistory):
 		try:
 			return self.top10list.index(player)
 		except ValueError:
@@ -699,7 +752,7 @@ class ChallengeSystem:
 			return self.top10list.index(player)
 	
 	
-	def _apply_a_kick_add(self, challenge):
+	def _apply_a_kick_add(self: "ChallengeSystem", challenge:ChallengeEvent):
 		if not isinstance(challenge, KickAddChallenge):
 			raise Exception(f"Wtf class? {type(challenge)}")
 		self.top10list.remove(challenge.loser.history)
@@ -708,14 +761,14 @@ class ChallengeSystem:
 		self.top10list.insert(self.TOP_OF, challenge.winner.history)
 			
 			
-	def _apply_a_take_over(self, challenge):
+	def _apply_a_take_over(self: "ChallengeSystem", challenge:ChallengeEvent):
 		if not isinstance(challenge, (NormalChallenge, NoScoreChallenge)):
 			raise Exception(f"Wtf class? {type(challenge)}")
 		self.top10list.remove(challenge.winner.history) 
 		self.top10list.insert(challenge.loser.history.get_rank(), challenge.winner.history) 
 		
 	###----------------ChallengeSystem.Public.Methods------------###
-	def write_csv(self):
+	def write_csv(self: "ChallengeSystem"):
 		# if not get_boolean("Are you sure you want to re-write the .csv database? You better have a backup"):
 			# return
 			
@@ -727,20 +780,20 @@ class ChallengeSystem:
 			file.write(supastring)
 		print(".csv guardado.")
 
-	def write_status(self):
+	def write_status(self: "ChallengeSystem"):
 		super_string = "\n".join(str(player.get_status()) for player in sorted( self.PLAYERS.values() ))
 		with open(self.status, "w", encoding='utf-8') as file:
 			file.write(super_string)
 			print(f"* {self.status.name} was updated")
 			
-	def write_embeds(self):
+	def write_embeds(self: "ChallengeSystem"):
 		all_instances = {cha.key: cha.embed for cha in reversed(self.CHALLENGES.values())}
 		filepath = r"output\embeds.json"
 		with open(filepath, "w") as json_file:
 			json.dump(all_instances, json_file, indent=4)
 			
 			
-	def write_chalog(self):
+	def write_chalog(self: "ChallengeSystem"):
 		# super_string = f"##AutoGenerated by 'ChallengeSystem' {datetime.today().strftime("%Y-%m-%d")}\nRegards, Bambi\n\n"
 		super_string = f"##AutoGenerated by 'ChallengeSystem'\nRegards, Bambi\n\n"
 		for num, cha in enumerate( sorted( self.CHALLENGES.values(),reverse=True ) , start=1):
@@ -753,61 +806,89 @@ class ChallengeSystem:
 			file.write(super_string)
 			print(f"* {self.chalog.name} was updated")
 	
-	def send_all_posts(self, start_with):
-		if not start_with:
-			start_with = self.get_challenge().key
-		end_with = len(SISTEMA.CHALLENGES)
-		if not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{end_with} each 7 minutes"):
+	def send_all_posts(self: "ChallengeSystem", confirmed:bool, start_with:int, finish_at: int, initial_delay: int, delay_between: int):
+		if not confirmed and not get_boolean(f"Confirm do you want recursively post challenges between {start_with}-{finish_at} in {initial_delay} minutes each {delay_between} minutes"):
 			return
-		for chakey in range(start_with, end_with+1):
-			self.CHALLENGES[chakey].post(confirmed=True)
-			time.sleep(60*7)
+		self.CHALLENGES[start_with].post(confirmed=True, delay=initial_delay)
+		for chakey in range(start_with+1, finish_at+1):
+			self.CHALLENGES[chakey].post(confirmed=True, delay=delay_between)
 			
-	def execute_argv_operations_if_any(self, argv):
-		def __get_validated_argv_dict(argv):
-			argv_dict = {
-				"cha_id": None,
-				"post": None,
-				"post_all": None
+	def execute_argv_operations_if_any(self: "ChallengeSystem", argv: list[str]):
+		# Ejemplos esperados:
+		# py cha.py action:post id:374 initDelay:4
+		# py cha.py action:post_all id:372 initDelay:4 betweenDelay:7
+		
+		
+		argv_dict: dict[str, Any] = {
+			"action": "post", #or "postall"
+			"delay": 0,
+			"confirmed": False,
+		}
+
+		def parse_argv(argv: list[str]) -> dict[str, str]:
+			result: dict[str, str] = {}
+			for arg in argv[1:]:  # ignoramos el nombre del script
+				if ":" in arg:
+					key, value = arg.split(":", 1)
+					result[key] = value
+			return result
+
+		def coerce_types(raw: dict[str, str]) -> dict[str, Any]:
+			"""Convierte valores a los tipos esperados y valida."""
+			return {
+				"action": raw.get("action", "post"),
+				"cha_id": int(raw["id"]) if "id" in raw else None,
+				"delay": int(raw.get("initDelay", 0)),
+				"betweenDelay": int(raw.get("betweenDelay", 7)),
+				"confirmed": raw.get("confirmed", "true").lower() in ["true", "1", "yes"],
 			}
-			if len(argv) > 2:
-				if argv[1].isnumeric():
-					cha_id = int(argv[1])
-					min = 1
-					max = len(self.CHALLENGES)
-					if min <= cha_id <= max:
-						argv_dict["cha_id"] = cha_id
-					else:
-						raise Exception(f"Challenge out of the range {min}-{max} range.")
-				else:
-					raise Exception(f"Wrong argv: {argv[1]} is not a valid challenge id")
-				if argv[2] not in argv_dict:
-					raise Exception(f"Wrong argv: {argv[2]} is not a valid method")
-				else:
-					argv_dict[argv[2]] = True
-			return argv_dict	
-			
-		if len(argv) == 1:
-			return
-		argv_dict = __get_validated_argv_dict(argv)
-		if argv_dict["post"]:
+		
+		min_chall = min(self.CHALLENGES)
+		max_chall = max(self.CHALLENGES)
+
+		if len(argv) > 1:
+			raw_dict = parse_argv(argv)
+			argv_dict = coerce_types(raw_dict)
+		else:
+			argv_dict["cha_id"] = get_int("Insertar challenge id: ", min=min_chall, max=max_chall)
+			argv_dict["action"] = "post_all" if argv_dict["cha_id"] < max_chall and get_boolean("Post all? ") else "post"
+			argv_dict["delay"] = get_int("Initial delay?: ")
+			argv_dict["betweenDelay"] = get_int("Delay between posts?: ", min=0, max=7) if argv_dict["action"] == "post_all" else 0
+			argv_dict["confirmed"] = True
+
+		# Validaciones
+		if argv_dict["cha_id"] is None or not (min_chall <= argv_dict["cha_id"] <= max_chall):
+			raise Exception(f"Challenge ID inválido. Rango válido: {min_chall}-{max_chall}")
+
+		# Ejecución
+		if argv_dict["action"] == "post":
 			instance = self.CHALLENGES[argv_dict["cha_id"]]
-			instance.post(confirmed=True)
-		elif argv_dict["post_all"]:
-			self.send_all_posts(argv_dict["cha_id"])
-			
-			
-	def get_challenge(self, hint=None):
+			instance.post(
+				confirmed=argv_dict["confirmed"],
+				delay=argv_dict["delay"],
+			)
+		elif argv_dict["action"] == "post_all":
+			self.send_all_posts(
+				confirmed=argv_dict["confirmed"],
+				start_with=argv_dict["cha_id"],
+				finish_at=min_chall,
+				initial_delay=argv_dict["delay"],
+				delay_between=argv_dict["betweenDelay"],
+			)
+		else:
+			raise Exception(f"Acción desconocida: {argv_dict['action']}")
+
+	def get_challenge(self: "ChallengeSystem", hint: Optional[int]) -> ChallengeEvent:
 		min=1
 		max=len(self.CHALLENGES)
 		if hint is None:
 			return self.CHALLENGES[get_int(f"Select challenge. Type the ID (min: {min}, max:{max}): ", indent=0, min=min, max=max)]
-		elif result:= self.CHALLENGES.get(hint):
+		elif result := self.CHALLENGES.get(cast(int, hint)):
 			return result
 		else:
 			raise Exception(f"Challenge of id {hint} not found. Logged challenges are between {min} and {max}.")
 
-	def consult_03_player_vs_player(self, p1_key, p2_key, print_em):
+	def consult_03_player_vs_player(self:"ChallengeSystem", p1_key:str, p2_key:str, print_em:bool):
 		return self.PLAYERS[p1_key].get_1v1_vs(self.PLAYERS[p2_key], print_em=print_em)
 		
 	# def consult_04_who_is_black(self, pname):
@@ -819,13 +900,13 @@ class ChallengeSystem:
 
 	
 	###----------------ChallengeSystem.Private.Methods------------###
-	def __read_CHALLENGES(self):
-		def sorted_dict_of_chall_from_lines(lines):
+	def __read_CHALLENGES(self: "ChallengeSystem") -> dict[int, ChallengeEvent]:
+		def sorted_dict_of_chall_from_lines(lines: list[str]):
 			headers = lines[0].strip().split(';')
 			rows = [line.strip().split(';') for line in lines[1:]]
 			key_column = 0 #the column that says KEY
 			sorted_rows = sorted(rows, key=lambda row: int(row[key_column]))
-			dataaaa = {}
+			dataaaa:dict[int,ChallengeEvent] = {}
 			for row in sorted_rows:
 				row_dict = {headers[i]: row[i] for i in range(len(headers))}
 				key = int(row_dict['key'])
@@ -838,10 +919,10 @@ class ChallengeSystem:
 			return
 		else:
 			with open(self.chacsv, mode='r', encoding='latin1') as file:
-				lines = file.readlines()
+				lines: list[str] = file.readlines()
 			return sorted_dict_of_chall_from_lines(lines)
 		
-	def __read_PLAYERS(self, active_players):
+	def __read_PLAYERS(self: "ChallengeSystem", active_players:dict[str,dict[str, list[str]]]) -> dict[str, PlayerHistory]:
 		if self.chalog.exists():
 			return { key: PlayerHistory(self, key, value) for key, value in active_players.items() }
 		else:
@@ -868,21 +949,22 @@ class ChallengeSystem:
 #-------------------------------------------------------------------------------------------------------------#
 #"""---------------------------------------------ok.Iniciar-------------------------------------------------"""#
 #-------------------------------------------------------------------------------------------------------------#
-
-SISTEMA = ChallengeSystem(
-	player_data = json.load(open(r"data\players.json")),
-	chareps = Path.cwd() / r"replays",
-	chacsv = Path.cwd() / r"data\challenges.csv",
-	chalog = Path.cwd() / r"output\challenges.log",
-	status = Path.cwd() / r"output\status.log",
-	webhook_url = mytoken.PIG_WEB_HOOK
-)
-
-
-
-
-	
 if __name__ == "__main__":
+	SISTEMA = ChallengeSystem(
+		players_json = Path.cwd() / "data" / "players.json",
+		chareps = Path(r"replays"),
+		chacsv = Path(r"data/challenges.csv"),
+		chalog = Path(r"output/challenges.log"),
+		status = Path(r"output/status.log"),
+		webhook_url = SECRETS.PIG_WEB_HOOK
+	)
+	
+	
+	# SendDiscordWebhook(payload = BFME2_PAYLOAD_1, webhook_url=BFME2_DOWNLOAD_HOOK)
+	# SendDiscordWebhook(payload = BFME2_PAYLOAD_2, webhook_url=BFME2_ONLINE_HOOK)
+	
+	
+	
 	SISTEMA.write_chalog();
 	SISTEMA.write_status();
 	# SISTEMA.write_embeds();
@@ -905,7 +987,7 @@ if __name__ == "__main__":
 	# SISTEMA.consult_03_player_vs_player("OTTO", "ECTH", print_em=True)
 	
 	
-	SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
+	# SISTEMA.consult_03_player_vs_player("OTTO", "ASTRO", print_em=True)
 	# SISTEMA.consult_04_who_is_black()
 	# SISTEMA.consult_05_2v2_score()
 	
@@ -916,4 +998,6 @@ if __name__ == "__main__":
 	SISTEMA.execute_argv_operations_if_any(sys.argv);
 	
 	"""3. SendToChlngUpdates"""
-	# SISTEMA.get_challenge(hint=None).post()
+	# SISTEMA.get_challenge(hint=None).post(confirmed=false, delay=0)
+
+

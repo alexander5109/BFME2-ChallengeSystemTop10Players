@@ -1,4 +1,5 @@
-import mytoken
+#import SECRETS
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 import asyncio
@@ -14,12 +15,32 @@ import random
 import json
 import requests
 import cha as cha_module
+import os
+from pathlib import Path
 
+load_dotenv()
+class SECRETS:
+	PIG_WEB_HOOK = os.environ["PIG_WEB_HOOK"]
+	TOKEN = os.environ["TOKEN"]
 
 ##-------------------------------------------------------------------##
 ##------------------------class.Setup.class--------------------------##
 ##-------------------------------------------------------------------##
 app = Flask('')
+
+# @app.route('/')
+# def hello_world():
+	# print(request.headers)
+	# return render_template(
+		# 'index.html',
+		# user_id=request.headers['X-Replit-User-Id'],
+		# user_name=request.headers['X-Replit-User-Name'],
+		# user_roles=request.headers['X-Replit-User-Roles'],
+		# user_bio=request.headers['X-Replit-User-Bio'],
+		# user_profile_image=request.headers['X-Replit-User-Profile-Image'],
+		# user_teams=request.headers['X-Replit-User-Teams'],
+		# user_url=request.headers['X-Replit-User-Url']
+	# )
 @app.route('/')
 def home():
 	return "Hello. I am alive!"
@@ -32,20 +53,17 @@ def keep_alive():
 	
 intents = discord.Intents.default()
 intents.message_content = True
-prefix = "!"
-bot = commands.Bot(command_prefix=prefix, intents=intents)
-
+bot = commands.Bot(command_prefix="!", intents=intents)
 logging.basicConfig(level=logging.INFO)
 
-    
 
 ##-------------------------------------------------------------------##
 ##------------------------class.Enums.class--------------------------##
 ##-------------------------------------------------------------------##
 class DiscordID(Enum):
-    TEMPT = "573249577801482270"
-    ECTH = "280848366030815233"
-    LAU = "247181526574432257"
+	TEMPT = "573249577801482270"
+	ECTH = "280848366030815233"
+	LAU = "247181526574432257"
 
 class ChannelID(Enum):
 	TOP10_STATUS = 751191825938776096
@@ -54,20 +72,21 @@ class ChannelID(Enum):
 	ADMIN = 801338722515157012
 
 
-    
+
 ##-------------------------------------------------------------------##
 ##------------------------class.RandonMap.class------------------##
 ##-------------------------------------------------------------------##
 class RandomMatchGenerator:
 	@staticmethod
 	def string_random_match(player1="bumbi", player2="undy"):
+		bfme2maps_1v1 = ["asd", "asdf"]
 		bfme2factions = ["Men", "Elves", "Dwarves", "Isengard", "Mordor", "Goblins"]
 		result = f"""	{random.sample(bfme2factions, k=2)}
 			{player1} vs {player2}
 			{random.choice(bfme2maps_1v1)}
 		"""
 		return result
-    
+
 ##-------------------------------------------------------------------##
 ##------------------------class.QuotesManager.class------------------##
 ##-------------------------------------------------------------------##
@@ -82,7 +101,7 @@ class QuotesManager:
 		quotes_data = [quote.json() for quote in self.quotes]
 		with open(self.json_quotes, "w", encoding="utf-8") as file:
 			json.dump(quotes_data, file, indent=4, ensure_ascii=False)
-			
+
 	def get_daily_quote(self):
 		today_int = datetime.now().weekday()
 		return {
@@ -94,7 +113,7 @@ class QuotesManager:
 			5: self.sabado_quotes,
 			6: self.sunday_quotes,
 		}[today_int]().format_as_daily()
-	
+
 	def get_random_quote_from(self, author=None, year=None, type=None, format=True):
 		filtered_quotes = self.quotes
 		if author is not None:
@@ -107,7 +126,7 @@ class QuotesManager:
 			raise ValueError("No quotes match the given criteria.")
 		quote = random.choice(filtered_quotes)
 		return quote.format_as_quote() if format else quote
-			
+
 	##-----------------SemiPublic----------------##
 	def lunes_quotes(self):
 		return random.choice([
@@ -136,7 +155,7 @@ class QuotesManager:
 			QUOTES.get_random_quote_from(AUTHORS.SAVAGE, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.THORIN, format=False),
 		])
-		
+
 	def viernes_quotes(self):
 		return random.choice([
 			QUOTES.get_random_quote_from(AUTHORS.CLEVER, format=False),
@@ -147,14 +166,14 @@ class QuotesManager:
 			QUOTES.get_random_quote_from(AUTHORS.UGANDA_PASTA, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.UGANDA_PEPE, format=False),
 		])
-		
+
 	def sabado_quotes(self):
 		return random.choice([
 			QUOTES.get_random_quote_from(AUTHORS.SAURON, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.SERTAÇ, format=False),
 			QUOTES.get_random_quote_from(AUTHORS.OTTO, format=False),
 		])
-		
+
 	def sunday_quotes(self): ##sunday
 		return random.choice([
 			QUOTES.get_random_quote_from(AUTHORS.LAZAR, format=False),
@@ -178,13 +197,13 @@ class Quote:
 		RANT = "**%sRant of %s**"
 		BALANCE = "**%sBalance request of %s:**"
 		CCC = "**%sCreative collective concatenation of %s:**"
-		
+
 	def __init__(self, author, type, year, content):
 		self.author = author
 		self.type = type
 		self.year = year
 		self.content = content
-		
+
 	##-----------------Public----------------##
 	def format_as_quote(self):
 		return (
@@ -192,7 +211,7 @@ class Quote:
 			+ (f"\n**Year: {self.year}**" if self.year else "")
 			+ self.__clean_content(self.content)
 		)
-		
+
 	def format_as_daily(self):
 		todays = f"{datetime.now().strftime('%A')}'s "
 		return (
@@ -200,7 +219,7 @@ class Quote:
 			+ (f"\n**Year: {self.year}**" if self.year else "")
 			+ self.__clean_content(self.content)
 		)
-		
+
 	def json(self):
 		return {
 			"author": self.author.name,
@@ -208,20 +227,22 @@ class Quote:
 			"year": self.year,
 			"content": self.__fully_clean_content(self.content),
 		}
-		
+
 	##-----------------Private----------------##
 	def __clean_content(self, quote):
 		quote = quote if "\n" in quote else f"\t\t{quote}"
 		quote = quote if not quote.startswith("\n") else quote.replace("\n","",1)
 		return "\n\t\t" + quote.replace("\n","\n\t\t") 
-		
+
 	def __fully_clean_content(self, quote):
 		return quote.strip().replace("\t","")
-		
-		
-		
+
+
+
 
 ##-------------------------async.Begins-----------------------------##
+
+
 @bot.event
 async def on_ready():
 	print("Everything's all ready to go~")
@@ -328,8 +349,8 @@ async def muka(channel):
 
 
 def fire_challenge_webhook(webhook, challenge):
-	ic(mytoken.PIG_WEB_HOOK)
-	webhook = discord.SyncWebhook.from_url(mytoken.PIG_WEB_HOOK)
+	ic(SECRETS.PIG_WEB_HOOK)
+	webhook = discord.SyncWebhook.from_url(SECRETS.PIG_WEB_HOOK)
 	embed = discord.Embed.from_dict(challenge.embed)
 	if challenge.replays:
 		file = discord.File(challenge.replays)
@@ -339,15 +360,15 @@ def fire_challenge_webhook(webhook, challenge):
 		webhook.edit_message(message_id=webhook_message.id,embed=embed)
 	else:
 		webhook.send(content=challenge.message, embed=embed)
-	
-	
+
+
 @bot.command()
 async def chalog(ctx, cha_id):
 	if str(ctx.author.id) in [DiscordID.ECTH.value]:
 		if cha_id.isnumeric():
 			challenge = cha_module.SISTEMA.CHALLENGES.get(int(cha_id))
 			if challenge:
-				fire_challenge_webhook(mytoken.PIG_WEB_HOOK, challenge)
+				fire_challenge_webhook(SECRETS.PIG_WEB_HOOK, challenge)
 				await ctx.send(f"Challenge Nº {cha_id} registered {'with' if challenge.replays else 'without'} replay.")
 			else:
 				await ctx.send(f"Challenge Nº {cha_id} not found.")
@@ -356,15 +377,15 @@ async def chalog(ctx, cha_id):
 	else:
 		await ctx.send("Only bambi can send this shit.")
 
-	
+
+
 
 
 ##-------------------------------------------------------------------##
 ##--------------------------class.Main.class------------------------##
 ##-------------------------------------------------------------------##
 if __name__ == "__main__":
-	AUTHORS = Enum("AUTHORS", json.load(open(r"data/authors.json", "r", encoding="utf-8")))
-	QUOTES = QuotesManager(r"data\quotes.json", )
+	AUTHORS = Enum("AUTHORS", json.load(open(Path.cwd() / "data" / "authors.json", "r", encoding="utf-8")))
+	QUOTES = QuotesManager(Path.cwd() / "data" / "quotes.json")
 	keep_alive()
-	bot.run(mytoken.TOKEN)
-	
+	bot.run(SECRETS.TOKEN)
