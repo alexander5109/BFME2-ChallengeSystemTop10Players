@@ -68,7 +68,7 @@ class HtmlColors:
 	PURPLEISH:int = 0x981D98
 	BLUEISH:int = 0x5DD9DF
 
-
+# class ReportBuilder
 
 
 # //--------------------------------------------------------------------//
@@ -260,6 +260,13 @@ class ChallengeEvent:
 		self.top10string = self.__get_top10string()
 		
 		
+	def __eq__(self, other: object) -> bool:
+		if not isinstance(other, ChallengeEvent):
+			return NotImplemented
+		return self.id == other.id
+
+	def __hash__(self: "ChallengeEvent"):
+		return hash(self.id)
 	
 	###--------------------ChallengeEvent.Static.Methods-------------###
 	@classmethod
@@ -341,10 +348,6 @@ class ChallengeEvent:
 
 			
 	###--------------------ChallengeEvent.Protected.Methods-------------###
-	
-	def _init_02_impact_players_historial(self) -> None:
-		"ChallengeEvent - abstract method to be implemented by subclasses"
-		raise NotImplementedError("This method should be overridden by subclasses")
 		
 	@cached_property
 	def embed(self) -> Dict[str, Any]:
@@ -506,14 +509,6 @@ class NormalChallenge(ChallengeEvent):
 		return ChaSys.chareps / f"Challenge{self.id}_{self.challenger.history.key}_vs_{self.defender.history.key},_{self.challenger.wins}-{self.defender.wins},_{self.version}.rar"
 		
 	###--------------------NormalChallenge.Protected.Methods-------------###
-			
-	def _init_02_impact_players_historial(self: "NormalChallenge") -> None:
-		"NormalChallenge is the only one that impacts historial"
-		self.winner.history.append_cha(self)
-		self.loser.history.append_cha(self)
-		self.winner.history.append_cha_win_lose(self.winner)
-		self.loser.history.append_cha_win_lose(self.loser)
-		
 	def _04_get_my_report(self: "NormalChallenge") -> str:
 		def __report_01_report_defenseortakeover():
 			flawlessly = "flawlessly " if self.loser.wins == 0 else ""
@@ -622,11 +617,6 @@ class NoScoreChallenge(ChallengeEvent):
 		}
 	
 	###---------------NoScoreChallenge.Protected.Methods---------------###
-			
-	def _init_02_impact_players_historial(self: "NoScoreChallenge") -> None:
-		"NoScoreChallenge is designed to not affect player winrate"
-		self.winner.history.append_cha(self)
-		self.loser.history.append_cha(self)
 		
 	def _04_get_my_report(self: "NoScoreChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
@@ -694,11 +684,6 @@ class KickAddChallenge(ChallengeEvent):
 		}
 		
 	###----------------KickAddChallenge.Protected.Methods-------------###
-		
-	def _init_02_impact_players_historial(self: "KickAddChallenge") -> None:
-		"KickAddChallenge is designed to not affect player winrate"
-		self.winner.history.append_cha(self)
-		self.loser.history.append_cha(self)
 		
 	def _04_get_my_report(self: "KickAddChallenge") -> str:
 		commment_line = f"\n\n\tComment: {self.notes}" if self.notes else ""
