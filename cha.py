@@ -1,9 +1,9 @@
-from datetime import datetime
 from pathlib import Path
 from icecream import ic
 import json
 # from shlex import split
 from functools import cached_property
+from datetime import datetime, timezone
 import requests
 import sys
 import time
@@ -298,8 +298,7 @@ class ChallengeEvent():
 				f"- Update {self.fecha}\n"
 				"```"
 			),
-			# "timestamp": datetime.now(UTC).isoformat(),
-			"timestamp": "TEST",
+			"timestamp": datetime.now(timezone.utc).isoformat(),
 			"footer": {"text": "Let the challenges continue!"},
 		}
 		
@@ -851,13 +850,11 @@ class ChallengeSystem:
 			raw_dict = parse_argv(argv)
 			argv_dict = coerce_types(raw_dict)
 		else:
-			argv_dict = {
-				"cha_id": get_int("Insertar challenge id: ", min=min_chall, max=max_chall),
-				"action": "post_all" if get_boolean("Post all? ") else "post",
-				"delay": get_int("Initial delay?: "),
-				"betweenDelay": get_int("Delay between posts?: ", min=0, max=7),
-				"confirmed": True,
-			}
+			argv_dict["cha_id"] = get_int("Insertar challenge id: ", min=min_chall, max=max_chall)
+			argv_dict["action"] = "post_all" if argv_dict["cha_id"] < max_chall and get_boolean("Post all? ") else "post"
+			argv_dict["delay"] = get_int("Initial delay?: ")
+			argv_dict["betweenDelay"] = get_int("Delay between posts?: ", min=0, max=7) if argv_dict["action"] == "post_all" else 0
+			argv_dict["confirmed"] = True
 
 		# Validaciones
 		if argv_dict["cha_id"] is None or not (min_chall <= argv_dict["cha_id"] <= max_chall):
