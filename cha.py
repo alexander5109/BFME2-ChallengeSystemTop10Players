@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from icecream import ic
 import json
-from shlex import split
+# from shlex import split
 from functools import cached_property
 import requests
 import sys
@@ -827,7 +827,7 @@ class ChallengeSystem:
 		}
 
 		def parse_argv(argv: list[str]) -> dict[str, str]:
-			result = {}
+			result: dict[str, str] = {}
 			for arg in argv[1:]:  # ignoramos el nombre del script
 				if ":" in arg:
 					key, value = arg.split(":", 1)
