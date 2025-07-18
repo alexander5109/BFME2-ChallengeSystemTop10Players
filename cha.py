@@ -96,13 +96,13 @@ class Top10Impacter:
 
 @dataclass
 class ChallengeBehavior:
-	check_integrity: Callable[['ChallengeEvent'], None]
-	impact_players: Callable[['ChallengeEvent'], None]
-	impact_top10: Callable[['ChallengeEvent'], None]
-	get_report: Callable[['ChallengeEvent'], str]
-	get_embed: Callable[['ChallengeEvent'], Dict[str, Any]]
-	post_to_discord: Callable[['ChallengeEvent', str], requests.Response]
-	report_header: Callable[['ChallengeEvent'], str]
+    check_integrity: Callable
+    impact_players: Callable
+    impact_top10: Callable
+    get_report: Callable
+    get_embed: Callable
+    post_to_discord: Callable
+    report_header: Callable
 	
 class EmbedBuilders:
 	@classmethod 
@@ -235,7 +235,7 @@ class EmbedBuilders:
 class DiscordPoster:
 	@staticmethod 
 	def NormalChallengePoster(event: "ChallengeEvent", discord_message:str) -> requests.Response:
-		print("NormalChallenge doing a _06_get_my_post") 
+		print("NormalChallenge doing a NormalChallengePoster") 
 		response = requests.post(
 			ChaSys.webhook_url,
 			data={"content": discord_message},
@@ -262,7 +262,7 @@ class DiscordPoster:
 				
 	@staticmethod 
 	def KickAddChallengePoster(event: "ChallengeEvent", discord_message:str) -> requests.Response:
-		print("KickAddChallenge doing a _06_get_my_post") 
+		print("KickAddChallenge doing a KickAddChallengePoster") 
 		if event.notes:
 			event.embed["fields"].insert(-2,{
 				"name": "Comments: ",
@@ -278,7 +278,7 @@ class DiscordPoster:
 				
 	@staticmethod 
 	def NoScoreChallengePoster(event: "ChallengeEvent", discord_message:str) -> requests.Response:
-		print("NoScoreChallenge doing a _06_get_my_post") 
+		print("NoScoreChallenge doing a NoScoreChallengePoster") 
 		if event.notes:
 			event.embed["fields"].insert(-2,{
 				"name": "Comments: ",
