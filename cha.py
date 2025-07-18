@@ -93,8 +93,17 @@ class Top10Impacter:
 		BaseDeDatos.top10list.remove(event.winner.history)
 		BaseDeDatos.top10list.insert(ChaSys.TOP_OF, event.loser.history)
 		BaseDeDatos.top10list.insert(ChaSys.TOP_OF, event.winner.history)
-		
-		
+
+@dataclass
+class ChallengeBehavior:
+	check_integrity: Callable[['ChallengeEvent'], None]
+	impact_players: Callable[['ChallengeEvent'], None]
+	impact_top10: Callable[['ChallengeEvent'], None]
+	get_report: Callable[['ChallengeEvent'], str]
+	get_embed: Callable[['ChallengeEvent'], Dict[str, Any]]
+	post_to_discord: Callable[['ChallengeEvent', str], requests.Response]
+	report_header: Callable[['ChallengeEvent'], str]
+	
 class EmbedBuilders:
 	@classmethod 
 	def __base_embed(cls: Type["EmbedBuilders"], event: "ChallengeEvent") -> Dict[str, Any]:
@@ -295,7 +304,7 @@ class ReportBuilder:
 		# KickAddChallenge behavior
 		commment_line = f"\n\n\tComment: {event.notes}" if event.notes else ""
 		return (
-			f"{event.report_header(event)}"
+			f"{event.behavior.report_header(event)}"
 			f"\n\nAddAndKickUpdate: "
 			f"Since Challenge {event.defender.previous_challenge.id}, {event.defender.history.name} has not played any game or challenge in {event.defender.days_since_last_chall} days."
 			f"\n\n- {event.defender.history.name} has been kicked from the {event.defender.rank_ordinal} spot and from the list."
@@ -309,7 +318,7 @@ class ReportBuilder:
 		# NoScoreChallenge behavior
 		commment_line = f"\n\n\tComment: {event.notes}" if event.notes else ""
 		return (
-			f"{event.report_header(event)}"
+			f"{event.behavior.report_header(event)}"
 			f"\n\nSpotUndefended: {event.defender.history.name} has refused to defend his spot or hasn't arranged a play-date to defend it."
 			f"\n\n+ {event.challenger.history.name} has taken over the {event.defender.rank_ordinal} spot!"
 			f"{commment_line}"
@@ -336,7 +345,7 @@ class ReportBuilder:
 			
 		commment_line = f"\n\n\tComment: {event.notes}" if event.notes else ""
 		return (
-			f"{event.report_header(event)}"
+			f"{event.behavior.report_header(event)}"
 			f"{__report_01_report_score()}"
 			f"{__report_01_report_defenseortakeover()}"
 			f"{commment_line}"
@@ -510,13 +519,7 @@ class ChallengeEvent:
 	id: int
 	row: dict[str, str]
 	embed_color: int
-	check_integrity: Callable[['ChallengeEvent'], None]
-	impact_players: Callable[['ChallengeEvent'], None]
-	impact_top10: Callable[['ChallengeEvent'], None]
-	get_report: Callable[['ChallengeEvent'], str]
-	get_embed: Callable[['ChallengeEvent'], Dict[str, Any]]
-	post_to_discord: Callable[['ChallengeEvent', str], requests.Response]
-	report_header: Callable[['ChallengeEvent'], str]
+	behavior: ChallengeBehavior
 	version: str
 	date: datetime
 	notes: str
@@ -530,18 +533,21 @@ class ChallengeEvent:
 		winner = PlayerInChallenge(cha_id, row["w_key"], row["w_wins1v1"], row["w_wins2v2"])
 		loser = PlayerInChallenge(cha_id, row["l_key"], row["l_wins1v1"], row["l_wins2v2"])
 		date = datetime.strptime(row["date"], '%Y-%m-%d')
+		
 		if version == "NO_SCORE_MODE":
 			return cls(
 				id = cha_id, 
 				row = row, 
 				embed_color = HtmlColors.ORANGEISH, 
-				check_integrity = IntegrityChecker.checkNoGamesChall,
-				impact_players = PlayerHistoryImpacter.impactNoGamesChall,
-				impact_top10 = Top10Impacter.impactTop10Normal,
-				get_report = ReportBuilder.GetNoScoreReport,
-				get_embed = EmbedBuilders.GetNoScoreChallengeEmbed,
-				post_to_discord = DiscordPoster.NoScoreChallengePoster,
-				report_header = ChallengeReportHeading.BaseChallengeHeader,
+				behavior = ChallengeBehavior(
+					check_integrity = IntegrityChecker.checkNoGamesChall,
+					impact_players = PlayerHistoryImpacter.impactNoGamesChall,
+					impact_top10 = Top10Impacter.impactTop10Normal,
+					get_report = ReportBuilder.GetNoScoreReport,
+					get_embed = EmbedBuilders.GetNoScoreChallengeEmbed,
+					post_to_discord = DiscordPoster.NoScoreChallengePoster,
+					report_header = ChallengeReportHeading.BaseChallengeHeader,
+				),
 				has_replays = False, 
 				version = row["version"],
 				date = date,
@@ -554,13 +560,15 @@ class ChallengeEvent:
 				id = cha_id, 
 				row = row, 
 				embed_color = HtmlColors.PURPLEISH, 
-				check_integrity = IntegrityChecker.checkNoGamesChall,
-				impact_players = PlayerHistoryImpacter.impactNoGamesChall,
-				impact_top10 = Top10Impacter.impactTop10Challengeless,
-				get_report = ReportBuilder.GetKickAddReport,
-				get_embed = EmbedBuilders.GetKickAddChallengeEmbed,
-				post_to_discord = DiscordPoster.KickAddChallengePoster,
-				report_header = ChallengeReportHeading.NoChallengeHeader,
+				behavior = ChallengeBehavior(
+					check_integrity = IntegrityChecker.checkNoGamesChall,
+					impact_players = PlayerHistoryImpacter.impactNoGamesChall,
+					impact_top10 = Top10Impacter.impactTop10Challengeless,
+					get_report = ReportBuilder.GetKickAddReport,
+					get_embed = EmbedBuilders.GetKickAddChallengeEmbed,
+					post_to_discord = DiscordPoster.KickAddChallengePoster,
+					report_header = ChallengeReportHeading.NoChallengeHeader,
+				),
 				has_replays = False, 
 				version = row["version"],
 				date = date,
@@ -573,13 +581,15 @@ class ChallengeEvent:
 				id = cha_id, 
 				row = row, 
 				embed_color = HtmlColors.BLUEISH,
-				check_integrity = IntegrityChecker.checkNormalChall,
-				impact_players = PlayerHistoryImpacter.impactNormalChall,
-				impact_top10 = Top10Impacter.impactTop10Normal,
-				get_report = ReportBuilder.GetNormalChallengeReport,
-				get_embed = EmbedBuilders.GetNormalChallengeEmbed,
-				post_to_discord = DiscordPoster.NormalChallengePoster,
-				report_header = ChallengeReportHeading.EnrichedChallengeHeader,
+				behavior = ChallengeBehavior(
+					check_integrity = IntegrityChecker.checkNormalChall,
+					impact_players = PlayerHistoryImpacter.impactNormalChall,
+					impact_top10 = Top10Impacter.impactTop10Normal,
+					get_report = ReportBuilder.GetNormalChallengeReport,
+					get_embed = EmbedBuilders.GetNormalChallengeEmbed,
+					post_to_discord = DiscordPoster.NormalChallengePoster,
+					report_header = ChallengeReportHeading.EnrichedChallengeHeader,
+				),
 				has_replays = True, 
 				version = row["version"],
 				date = date,
@@ -591,12 +601,12 @@ class ChallengeEvent:
 	
 	###--------------------ChallengeEvent.Public.Methods-------------###
 	def do_stuff(self: "ChallengeEvent") -> None:
-		self.check_integrity(self)
+		self.behavior.check_integrity(self)
 		for player in {self.winner, self.loser}:
 			ChaSys.set_top10_rank(player)
 		
-		self.impact_players(self)
-		self.impact_top10(self)
+		self.behavior.impact_players(self)
+		self.behavior.impact_top10(self)
 		self.top10string = ChaSys.get_top10string()
 			
 	def Rename_existing_replaypack(self: "ChallengeEvent", torename:str, compress:bool) -> None:
@@ -627,7 +637,7 @@ class ChallengeEvent:
 		if delay:
 			wait_minutes(delay)
 		discord_message = "📢 **Challenge Update!** A new match result is in! Check out the details below."
-		response = self.post_to_discord(self, discord_message)
+		response = self.behavior.post_to_discord(self, discord_message)
 		
 		if response.status_code in {200, 204}:
 			print(f"Challenge Nº{self.id} successfully sent to Discord via the webhook!")
@@ -661,7 +671,7 @@ class ChallengeEvent:
 		
 	@cached_property
 	def embed(self: "ChallengeEvent") -> Dict[str, Any]:
-		return self.get_embed(self)
+		return self.behavior.get_embed(self)
 		
 	@cached_property
 	def replays_dir(self: "ChallengeEvent") -> Path:
@@ -690,7 +700,7 @@ class ChallengeEvent:
 			"\n```diff\n"
 			f"\n- Challenge № {self.id}"
 			f"\n- Update {self.fecha}"
-			f"{self.get_report(self)}"
+			f"{self.behavior.get_report(self)}"
 			f"\n\nLet the challenges continue!"
 			f"\n\n{self.top10string}```"
 		)
